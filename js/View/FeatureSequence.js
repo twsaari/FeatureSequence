@@ -22,25 +22,32 @@ return declare( null,
     seq: -1,
 
     constructor: function(feature, seq, opt){
+        var self = this;
         console.log("Calling FeatureSequence"); //TWS DEBUG
         this.feature = feature;
         this.seq = seq;
         this.opt = opt;
         this.subf_byType = getSubFeats(feature);
+        this._hidden = [];
+        this._highlighted = [];
+        this._lowercase = [];
         //console.log(opt.divName); //TWS DEBUG
         //this._sequenceDiv = query( "#" + opt.seqDivName );
 
-        this._initialize();
-        console.log(this);
+        this._initialize(self);
+
     },
 
-    _initialize: function() {
+    _initialize: function(self) {
         console.log("Calling initialize"); //TWS DEBUG
         var container = dojo.create('div', {
     		id: "FeatureSeq_container", 
 	    	className: 'sequenceViewerContainer', 
 	    	innerHTML: '<b>FOO</b>' 
 	    });
+
+        self._container = container;
+
 	    var button_container = dojo.create('div', {
 	    	id: 'button_container',
 	    	className: 'sequenceViewer_topFields' 
@@ -49,7 +56,9 @@ return declare( null,
         dojo.create( 'div', { id: "seq_display", innerHTML: 'SEQ'},container);
 
 
-        this.subf_byType.forEach(function(type){
+        Object.keys(self.subf_byType).forEach(function(type){
+
+            //var subfArray = self.subf_byType[index];
 
             var row = dojo.create('tr', {
                 id: type+'_buttonRow',
@@ -61,7 +70,33 @@ return declare( null,
 		        id: type+"_highlightButton",
 		        checked: false,
     		    //iconClass: "dijitCheckBoxIcon",
-	    	    label: 'Highlight'
+	    	    label: 'Highlight',
+		        onChange: function(){
+			        if (this.checked) {
+				        this.set('label', 'Unhighlight');
+				        self.subf_byType[type].forEach(function(highlight) {
+                            self._addHighlight(highlight);
+                        });
+/*
+                        for ( var i = 0; i < subfArray.length; i++){
+					        self._addHighlight(subfArray[i]);
+					        //console.log(BioJsObject); TWS DEBUG
+				        }
+*/
+			        }
+			        else {
+				        this.set('label', 'Highlight');
+				        self.subf_byType[type].forEach(function(highlight) {
+                            self._removeHighlight(highlight);
+                        });
+
+/*
+				        for ( var i = 0; i < subfArray.length; i++){
+					        self._removeHighlight(subfArray[i]);
+				        }
+*/
+			        }
+		        }
     	    });
 
 	        //dojo.addClass(highlightButton.domNode, "highlightButton");
@@ -80,11 +115,14 @@ return declare( null,
 		        label: 'Lowercase'
 	        });
 
+            //console.log(highlightButton);
             highlightButton.placeAt(row);
 	        hideShowButton.placeAt(row);
 	        textCaseButton.placeAt(row);
 
         });
+
+        this._twsDrawFasta();
 
         var myDialog = new Dialog({
             title: "FeatureSequence Viewer",
@@ -93,9 +131,59 @@ return declare( null,
         myDialog.show();
 
         //this._contentDiv = container;
-    }
-            
+    },
 
+    _addHighlight: function(highlight) {
+		this._highlighted.push(highlight);
+		this._applyHighlight(highlight);
+	},
+
+    _applyHighlight: function(h) {
+		dojo.query('.sequence').forEach(function(node,index) {
+			if (index >= h.start && index < h.end) {
+				dojo.addClass( node, 'highlighted');
+			}
+			//if (index == 1) {console.log(node);} //TWS DEBUG
+		});
+	},
+
+	_removeHighlight: function(h) {
+		//console.log('_removeHighlight called. Here is the highlight obj');	//TWS DEBUG
+		//console.log(h); //TWS DEBUG
+		dojo.query('.sequence').forEach(function(node,index,arr) {
+			if (index == 1) { console.log(arr[index]);} //TWS DEBUG
+			//console.log('foreach loop within _removeHighlight'); //TWS DEBUG
+			if (index >= h.start && index < h.end) {
+				//console.log("Should be highlighting now.");
+				dojo.removeClass( node, 'highlighted');
+			}
+			//if (index == 1) { console.log(node.style.background);} //TWS DEBUG
+		});
+	},
+
+    _twsDrawFasta: function() { //TWS Left off here 2-25-2016 Trying to get twsDrawFasta to work. 
+		console.log("Calling twsDrawFasta"); //TWS debug
+
+		var arr = this.seq.target.toUpperCase().split('');
+
+		var container = query( "#" + this.opt.seqDivName )[0];
+		var seqBox = dojo.create('div', { 
+			className: 'sequence_box',
+			innerHTML: '<span class="sequence_title">'+'&gt' + this.opt.id + ' '+arr.length+' '+'bp'+'</span><br>'
+		}, dojo.byId(this.opt.seqDivName));
+
+		arr.forEach(function(base,index) {
+            //console.log(base); //TWS DEBUG
+            var spn = dojo.create('span', {id: 'targetseq_'+index, className: 'sequence', innerHTML: base});
+            domConstruct.place(spn, seqBox);
+        });
+/*
+        for (var i=0; i < arr.length; i++) {
+			dojo.create('span', {id: this.opt.id+'_'+i, className: 'sequence', innerHTML: arr[i]}, seqBox);
+		}
+*/
+	}
+            
 });
 });
 

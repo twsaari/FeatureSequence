@@ -29,9 +29,6 @@ define([
 return declare( JBrowsePlugin,
 {
     constructor: function( args ) {
-    
-        var thisB = this;
-        //console.log(args);
 
         // do anything you need to initialize your plugin here
 
@@ -59,14 +56,13 @@ return declare( JBrowsePlugin,
 
         var seq_obj = this.getSequence(track,feature);
 
-        //TWS Left off here 2-24-2016 Trying to make asynchronous shit work
-
+/*
         var subfeats = feature.get('subfeatures');
         var types = subfeats.map(function(value) { return value.get('type'); }).sort().filter(function(el,i,a){if(i==a.indexOf(el))return 1;return 0});
         //console.log(types); //TWS DEBUG
 
         //Get sequence and create FeatureSequence
-
+*/
         
 
         console.log("Testing Deferred");
@@ -79,12 +75,9 @@ return declare( JBrowsePlugin,
         seq_obj.then(function(seq_obj){
             //FeatureSequence(feature, sequence, {options})
             var FeatSeq = new FeatureSequence(feature, seq_obj, {
-                seqDivName: 'seq_display',
-                hidden: [],
-                highlighted: [],
-                lowercase: []
+                seqDivName: 'seq_display'
             });
-        //TWS LEFT OFF HERE 2-24-2016. Will show dialog from FeatureSequence init? Currently getting strange TypeError: b is undefined
+
 /*
             var myDialog = new Dialog({
                 title: "FeatureSequence Viewer",
@@ -96,16 +89,16 @@ return declare( JBrowsePlugin,
         });
 
         //Create divs
-        var container = this._createDivs();
+        //var container = this._createDivs();
 
         //Create buttons
-        this._createButtons(types); //TWS Left off here - this causes errors
+        //this._createButtons(types); //TWS Left off here - this causes errors
 
         
         //console.log(container);
-        //return 'This popup message is only necessary to initialize FeatureSequence Viewer';//container; //instance.FeatSeq._contentDiv; //dom.byId('FeatureSeq_container');
+        return 'This popup message is only necessary to initialize FeatureSequence Viewer';//container; //instance.FeatSeq._contentDiv; //dom.byId('FeatureSeq_container');
     },
-
+/*
     _createButtons: function(types_arr) {
         console.log("Calling createButtons"); //TWS DEBUG
 
@@ -163,7 +156,7 @@ return declare( JBrowsePlugin,
         dojo.create( 'div', { id: "seq_display", innerHTML: 'SEQ'},container);
         return container;
     },
-
+*/
     getSequence: function( track, feature) {
         console.log("Calling getSequence");
 
