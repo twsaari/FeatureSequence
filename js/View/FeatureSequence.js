@@ -4,7 +4,8 @@ define([
            'dojo/_base/lang',
 		   'dojo/dom-construct',
 		   'dojo/dom-class',
-		   'dojo/query'
+		   'dojo/query',
+           'dijit/Dialog'
        ],
        function(
            declare,
@@ -12,7 +13,8 @@ define([
            lang,
 		   domConstruct,
 		   domClass,
-		   query
+		   query,
+           Dialog
        ) {
 return declare( null,
 {
@@ -84,7 +86,13 @@ return declare( null,
 
         });
 
-        this._contentDiv = container;
+        var myDialog = new Dialog({
+            title: "FeatureSequence Viewer",
+            content: container
+        });
+        myDialog.show();
+
+        //this._contentDiv = container;
     }
             
 

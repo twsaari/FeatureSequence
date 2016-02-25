@@ -1,17 +1,19 @@
 define([
+           'dijit/Dialog',
            'dojo/_base/declare',
            'dojo/_base/array',
            'dojo/_base/lang',
            'dojo/Deferred',
            'dojo/dom',
-		   'dojo/dom-construct',
+           'dojo/dom-construct',
 		   'dojo/dom-class',
 		   'dojo/query',
            'JBrowse/Util',
            'JBrowse/Plugin',
-            './View/FeatureSequence'
+           './View/FeatureSequence'
        ],
        function(
+           Dialog,
            declare,
            array,
            lang,
@@ -55,51 +57,43 @@ return declare( JBrowsePlugin,
     testFxn: function(track, feature) {
         console.log("Calling testFxn."); //TWS DEBUG
 
-        var seq = new Deferred(); //TWS Left off here 2-24-2016 Trying to make asynchronous shit work
+        var seq_obj = this.getSequence(track,feature);
+
+        //TWS Left off here 2-24-2016 Trying to make asynchronous shit work
 
         var subfeats = feature.get('subfeatures');
         var types = subfeats.map(function(value) { return value.get('type'); }).sort().filter(function(el,i,a){if(i==a.indexOf(el))return 1;return 0});
         //console.log(types); //TWS DEBUG
 
         //Get sequence and create FeatureSequence
-        var buffer = 4000;
-        var feature_coords = [feature.get('start'), feature.get('end')];
-        feature_coords.sort(function(a,b){return a-b;}); //swap if out of order
-        var getStart = feature_coords[0] - buffer;
-        var getEnd = feature_coords[1] + buffer;
-        var targetSeqLen = feature_coords[1]-feature_coords[0];
-        track.store.args.browser.getStore('refseqs', dojo.hitch(this,function( refSeqStore ) {
 
-        	if( refSeqStore ) {
-                console.log(instance.foo);
-        	    refSeqStore.getReferenceSequence(
-//		{ ref: track.store.args.browser.refSeq.name, start: start_coord-4000, end: end_coord+4000},
-            		{ ref: track.store.args.browser.refSeq.name, start: getStart, end: getEnd}, //TWS DEBUG
-                    dojo.hitch( this, function (fullSeq){
-                        if (feature.get('strand') == -1) {
-                            fullSeq = Util.revcom(fullSeq);
-                        }
+        
 
-                        var seq = {
-                            upstream: fullSeq.substr(0,buffer), 
-                            target: fullSeq.substr(buffer,targetSeqLen),
-                            downstream: fullSeq.substr(-(targetSeqLen+buffer))
-                        };
+        console.log("Testing Deferred");
 
-                        //FeatureSequence(feature, sequence, {options})
-                        this.FeatSeq = new FeatureSequence(feature, seq, {
-                            seqDivName: 'seq_display',
-                            hidden: [],
-                            highlighted: [],
-                            lowercase: []
-                        });
-                        console.log(this)
-                        //FeatSeq.show();
-                    })
-                );
-            }
-        })
-        );
+        //var foob = seqDeferred.then;
+        //console.log(foob);
+
+        //console.log(seq_obj);
+            
+        seq_obj.then(function(seq_obj){
+            //FeatureSequence(feature, sequence, {options})
+            var FeatSeq = new FeatureSequence(feature, seq_obj, {
+                seqDivName: 'seq_display',
+                hidden: [],
+                highlighted: [],
+                lowercase: []
+            });
+        //TWS LEFT OFF HERE 2-24-2016. Will show dialog from FeatureSequence init? Currently getting strange TypeError: b is undefined
+/*
+            var myDialog = new Dialog({
+                title: "FeatureSequence Viewer",
+                content: container
+            });
+            myDialog.show();
+*/
+            //console.log(seq_obj);
+        });
 
         //Create divs
         var container = this._createDivs();
@@ -107,9 +101,9 @@ return declare( JBrowsePlugin,
         //Create buttons
         this._createButtons(types); //TWS Left off here - this causes errors
 
-        console.log(container);
-        return container; //instance.FeatSeq._contentDiv; //dom.byId('FeatureSeq_container');
-
+        
+        //console.log(container);
+        //return 'This popup message is only necessary to initialize FeatureSequence Viewer';//container; //instance.FeatSeq._contentDiv; //dom.byId('FeatureSeq_container');
     },
 
     _createButtons: function(types_arr) {
@@ -168,7 +162,56 @@ return declare( JBrowsePlugin,
 	    dojo.create('table', { id: "button_meta_table" }, button_container );
         dojo.create( 'div', { id: "seq_display", innerHTML: 'SEQ'},container);
         return container;
+    },
+
+    getSequence: function( track, feature) {
+        console.log("Calling getSequence");
+
+        var seqDeferred = new Deferred();
+
+        var buffer = 4000;
+        var feature_coords = [feature.get('start'), feature.get('end')].sort(function(a,b){return a-b;}); //swap if out of order;
+        var getStart = feature_coords[0] - buffer;
+        var getEnd = feature_coords[1] + buffer;
+        var targetSeqLen = feature_coords[1]-feature_coords[0];
+
+        track.store.args.browser.getStore('refseqs', dojo.hitch(this,function( refSeqStore ) {
+
+        	if( refSeqStore ) {
+        	    refSeqStore.getReferenceSequence(
+    //	{ ref: track.store.args.browser.refSeq.name, start: start_coord-4000, end: end_coord+4000},
+              	    { ref: track.store.args.browser.refSeq.name, start: getStart, end: getEnd}, //TWS DEBUG
+                        dojo.hitch( this, function (fullSeq){
+                            if (feature.get('strand') == -1) {
+                                fullSeq = Util.revcom(fullSeq);
+                            }
+
+                            var seq_obj = {
+                                upstream: fullSeq.substr(0,buffer), 
+                                target: fullSeq.substr(buffer,targetSeqLen),
+                                downstream: fullSeq.substr(-(targetSeqLen+buffer))
+                            };
+
+                            seqDeferred.resolve(seq_obj);                        
+    /*
+                            //FeatureSequence(feature, sequence, {options})
+                            var FeatSeq = new FeatureSequence(feature, fullSeq, {
+                                seqDivName: 'seq_display',
+                                hidden: [],
+                                highlighted: [],
+                                lowercase: []
+                            });
+                            //console.log(this)
+                            //FeatSeq.show();
+    */
+                        })
+                    );
+                }
+            })
+            );
+
+        return seqDeferred.promise
     }
-	
+
 });
 });
