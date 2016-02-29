@@ -6,6 +6,7 @@ define([
 		   'dojo/dom-class',
            'dojo/dom-style',
 		   'dojo/query',
+           'dijit/form/ToggleButton',
            'dijit/Dialog'
        ],
        function(
@@ -16,6 +17,7 @@ define([
 		   domClass,
            domStyle,
 		   query,
+           ToggleButton
            Dialog
        ) {
 return declare( null,
@@ -25,7 +27,7 @@ return declare( null,
 
     constructor: function(feature, seq, opt){
         var self = this;
-        console.log("Calling FeatureSequence"); //TWS DEBUG
+        //console.log("Calling FeatureSequence"); //TWS DEBUG
         this.feature = feature;
         this.seq = seq;
         this.opt = opt;
@@ -33,22 +35,18 @@ return declare( null,
         this._hidden = [];
         this._highlighted = [];
         this._lowercase = [];
-        //console.log(opt.divName); //TWS DEBUG
-        //this._sequenceDiv = query( "#" + opt.seqDivName );
 
         this._initialize(self);
 
     },
 
     _initialize: function(self) {
-        console.log("Calling initialize"); //TWS DEBUG
+        //console.log("Calling initialize"); //TWS DEBUG
         var container = dojo.create('div', {
     		//id: "FeatureSeq_container", 
 	    	className: 'FeatureSequenceContainer', 
 	    	innerHTML: '' 
 	    });
-
-        //self._container = container;
 
 	    var button_container = dojo.create('div', {
 	    	//id: 'button_container',
@@ -56,7 +54,8 @@ return declare( null,
 	    }, container );
 	    var metaTable = dojo.create('table', { 
             //id: "button_meta_table",
-            className: 'button_meta_table' }, button_container );
+            className: 'button_meta_table'
+        }, button_container );
         dojo.create( 'div', {
             //id: "seq_display",
             className: "seq_display",
@@ -65,17 +64,19 @@ return declare( null,
 
         Object.keys(self.subf_byType).forEach(function(type){
 
-            //var subfArray = self.subf_byType[index];
-
             var row = dojo.create('tr', {
                 //id: type+'_buttonRow',
                 className:'buttonRow',
-                innerHTML: '<td><b>'+type+'s'+'</b></td>'
+                innerHTML: '<td class="col1_td"><b class="rowName">'+type+'s'+'</b></td>'
             }, metaTable );
 
-            var highlightButton = new dijit.form.ToggleButton({
+            var highlight_td = dojo.create('td', {
+                className: 'button_td'
+            }, row );
+
+            var highlightButton = new ToggleButton({
 		        //id: type+"_highlightButton",
-                className: 'highlightButton',
+                style: "width: 85px;",
 		        checked: false,
     		    //iconClass: "dijitCheckBoxIcon",
 	    	    label: 'Highlight',
@@ -84,37 +85,26 @@ return declare( null,
                         var colorstr = pastelColors();
 				        this.set('label', 'Unhighlight');
 				        self.subf_byType[type].forEach(function(highlight) {
-                            //highlight.color = pastelColors();
                             highlight.color = colorstr;
                             self._addHighlight(highlight);
                         });
-/*
-                        for ( var i = 0; i < subfArray.length; i++){
-					        self._addHighlight(subfArray[i]);
-					        //console.log(BioJsObject); TWS DEBUG
-				        }
-*/
 			        }
 			        else {
 				        this.set('label', 'Highlight');
 				        self.subf_byType[type].forEach(function(highlight) {
                             self._removeHighlight(highlight);
                         });
-
-/*
-				        for ( var i = 0; i < subfArray.length; i++){
-					        self._removeHighlight(subfArray[i]);
-				        }
-*/
 			        }
 		        }
     	    });
 
-	        //dojo.addClass(highlightButton.domNode, "highlightButton");
+            var hideShow_td = dojo.create('td', {
+                className: 'button_td'
+            }, row );
 
-	        var hideShowButton = new dijit.form.ToggleButton({
+	        var hideShowButton = new ToggleButton({
 		        //id: type+"hide",
-                className: 'hideButton',
+                style: "width: 48px;",
 		        checked: false,
 		        //iconClass: "dijitCheckBoxIcon",
 		        label: 'Hide',
@@ -123,30 +113,24 @@ return declare( null,
 				        self.subf_byType[type].forEach(function(hidden) {
                             self._addHidden(hidden);
                         });
-/*
-				        for ( var i = 0; i < subfArray.length; i++){
-					        BioJsObject._addHidden(subfArray[i]);
-				        }
-*/
 				        this.set('label', 'Show');
 			        }
 			        else {
 				        self.subf_byType[type].forEach(function(hidden) {
                             self._removeHidden(hidden);
                         });
-/*
-				        for ( var i = 0; i < subfArray.length; i++){
-					        BioJsObject._removeHidden(subfArray[i]);
-				        }
-*/
 				        this.set('label', 'Hide');
 			        }
 		        }
 	        });
 
-	        var textCaseButton = new dijit.form.ToggleButton({
+            var textCase_td = dojo.create('td', {
+                className: 'button_td'
+            }, row );
+
+	        var textCaseButton = new ToggleButton({
 		        //id: type+"Lowercase",
-                className: 'lowercaseButton',
+                style: "width: 78px;",
 		        checked: false,
 		        //iconClass: "dijitCheckBoxIcon",
 		        label: 'Lowercase',
@@ -155,31 +139,20 @@ return declare( null,
 				        self.subf_byType[type].forEach(function(lower) {
                             self._addLowercase(lower);
                         });
-/*
-				        for ( var i = 0; i < subfArray.length; i++){
-					        BioJsObject._addLowercase(subfArray[i]);
-				        }
-*/
 				        this.set('label', 'Uppercase');
 			        }
 			        else {
 				        self.subf_byType[type].forEach(function(lower) {
                             self._removeLowercase(lower);
                         });
-/*
-				        for ( var i = 0; i < subfArray.length; i++){
-					        BioJsObject._removeLowercase(subfArray[i]);
-				        }
-*/
 				        this.set('label', 'Lowercase');
 			        }
 		        }
 	        });
 
-            //console.log(highlightButton);
-            highlightButton.placeAt(row);
-	        hideShowButton.placeAt(row);
-	        textCaseButton.placeAt(row);
+            highlightButton.placeAt(highlight_td);
+	        hideShowButton.placeAt(hideShow_td);
+	        textCaseButton.placeAt(textCase_td);
 
         });
 
@@ -195,10 +168,9 @@ return declare( null,
             }
         });
 
-        console.log("Calling myDialog.show()");
+        //console.log("Calling myDialog.show()");
         myDialog.show();
 
-        //this._contentDiv = container;
     },
 
 	_addHidden: function(hidden) {
@@ -210,7 +182,6 @@ return declare( null,
 
 		dojo.query('.sequence').forEach(function(node,index) {
 			if (index >= h.start && index < h.end) {
-				//console.log(index); //TWS DEBUG
 				node.style.display = "none";
 			}
 		});
@@ -230,28 +201,18 @@ return declare( null,
 	},
 
     _applyHighlight: function(h) {
-        //console.log(h); //TWS DEBUG
 		dojo.query('.sequence').forEach(function(node,index) {
 			if (index >= h.start && index < h.end) {
-                //console.log(node);
                 domStyle.set(node, "background-color", h.color);
-				//dojo.addClass( node, 'highlighted');
 			}
-			//if (index == 1) {console.log(node);} //TWS DEBUG
 		});
 	},
 
 	_removeHighlight: function(h) {
-		//console.log('Calling _removeHighlight');	//TWS DEBUG
-		//console.log(h); //TWS DEBUG
 		dojo.query('.sequence').forEach(function(node,index,arr) {
-			//if (index == 1) { console.log(arr[index]);} //TWS DEBUG
-			//console.log('foreach loop within _removeHighlight'); //TWS DEBUG
 			if (index >= h.start && index < h.end) {
-                domStyle.set(node, "background-color", "#FFF");                
-				//dojo.removeClass( node, 'highlighted');
+                domStyle.set(node, "background-color", "#FFF");
 			}
-			//if (index == 1) { console.log(node.style.background);} //TWS DEBUG
 		});
 	},
 
@@ -278,19 +239,18 @@ return declare( null,
 		});
 	},
 
-    _DrawFasta: function() { //TWS Left off here 2-25-2016 Trying to get twsDrawFasta to work. 
-		console.log("Calling twsDrawFasta"); //TWS debug
+    _DrawFasta: function() {
+		//console.log("Calling DrawFasta"); //TWS debug
 
 		var arr = this.seq.target.toUpperCase().split('');
 
-		//var container = query( "#" + this.opt.seqDivName )[0];
 		var seqBox = dojo.create('div', { 
 			className: 'sequence_box',
-			innerHTML: '<span class="sequence_title">'+'&gt' + this.feature.get('id') + ' '+arr.length+' '+'bp'+'</span><br>'
+			innerHTML: '<span class="sequence_title">'+'&gt' + this.feature.get('id') + '</span><br>'
+			//innerHTML: '<span class="sequence_title">'+'&gt' + this.feature.get('id') + ' '+arr.length+' '+'bp'+'</span><br>'
 		});
 
 		arr.forEach(function(base,index) {
-            //console.log(base); //TWS DEBUG
             var spn = dojo.create('span', {
                 //id: 'targetseq_'+index,
                 className: 'sequence',
@@ -300,44 +260,48 @@ return declare( null,
         });
 
         return seqBox;
-/*
-        for (var i=0; i < arr.length; i++) {
-			dojo.create('span', {id: this.opt.id+'_'+i, className: 'sequence', innerHTML: arr[i]}, seqBox);
-		}
-*/
+
 	}
             
 });
 });
 
+/**
+ * Title: getSubFeats
+ * Description: Creates a subf_byType object containing arrays of subfeatures,
+ *  with each type of subfeature in a separate array
+ * @param {feature (jbrowse object)}
+ * @returns {subf_byType (FeatureSequence object)}
+ */
 function getSubFeats (feature) {
 
-	console.log("Calling getSubFeats"); //TWS DEBUG
+	//console.log("Calling getSubFeats"); //TWS DEBUG
 
-	var feature_coords = [feature.get('start'), feature.get('end')];
-	feature_coords.sort(function(a,b){return a-b;}); //swap if out of order
+	var feature_coords = [feature.get('start'), feature.get('end')]
+        .sort(function(a,b){return a-b;}); //swap if out of order
+
+	//feature_coords.sort(function(a,b){return a-b;});
 
 	var feature_strand = feature.get('strand');
-
-	//console.log('featStart:'+feature_coords[0]+' featEnd:'+feature_coords[1]) //TWS DEBUG
 
 	var arraysByType = {};
 	var subfeatures = feature.get('subfeatures');
 	subfeatures.forEach(function(f, ind) {
 
-		var subfeat_coords = [f.get('start'), f.get('end')];
-		subfeat_coords.sort(function(a,b){return a-b;}); //swap if out of order
+		var subfeat_coords = [f.get('start'), f.get('end')]
+            .sort(function(a,b){return a-b;}); //swap if out of order
 
+		//subfeat_coords.sort(function(a,b){return a-b;});
+
+        //All coordinates are made relative to feature start
 		if (feature_strand == 1) {
-			var subf_start = subfeat_coords[0] - feature_coords[0]; //Relative to feature start
-			var subf_end = subfeat_coords[1] - feature_coords[0]; //Relative to feature start
+			var subf_start = subfeat_coords[0] - feature_coords[0]; 
+			var subf_end = subfeat_coords[1] - feature_coords[0]; 
 		} else if (feature_strand == -1) {
-			var subf_start = feature_coords[1] - subfeat_coords[1]; //Relative to feature start
-			var subf_end = feature_coords[1] - subfeat_coords[0]; //Relative to feature start
+			var subf_start = feature_coords[1] - subfeat_coords[1];
+			var subf_end = feature_coords[1] - subfeat_coords[0];
 		}
 
-		//console.log('subfStart:'+subfeat_coords[0]+' subfEnd:'+subfeat_coords[1]); //TWS DEBUG
-		//console.log('relStart:'+subf_start+' relEnd:'+subf_end); //TWS DEBUG
 		var subf_strand = f.get('strand');
 		var subf_type = f.get('type');
 
@@ -352,15 +316,12 @@ function getSubFeats (feature) {
 		arraysByType[subf_type].push(subf_obj)
 	});
 
-	/*
-	 * Sort each array of subfeatures by start location
-	 * Note: In this plugin, these will be sorted by their order on the reference, 
-	 * and therefore negative strand subfeatures might appear to have the wrong biological order
-	 */
+    //Sort by start location note that these coordinates are relative
 	for (var type in arraysByType) {
 		sortByKey(arraysByType[type], 'start');
 	}
 
+    //if type exon exists, create corresponding introns
 	if ('exon' in arraysByType) {
 		arraysByType['intron'] = intronsFromExons(arraysByType.exon);
 	}
@@ -376,7 +337,7 @@ function getSubFeats (feature) {
  */
 function intronsFromExons (exons) {
 
-	console.log("Calling intronsFromExons"); //TWS DEBUG
+	//console.log("Calling intronsFromExons"); //TWS DEBUG
 	var intronArray = [];
 
 	for (var i = 0; i < exons.length-1; i++) {
@@ -398,7 +359,7 @@ function intronsFromExons (exons) {
  */
 function sortByKey(array, key) {
 
-	console.log("Calling sortByKey"); //TWS DEBUG
+	//console.log("Calling sortByKey"); //TWS DEBUG
     return array.sort(function(a, b) {
         var x = a[key];
         var y = b[key];
@@ -413,6 +374,12 @@ function sortByKey(array, key) {
     });
 }
 
+/**
+ * Title: pastelColors
+ * Description: Creates a randomized pastel color.
+ * @param {}
+ * @returns { color (string) }
+ */
 function pastelColors(){
     var r = (Math.round(Math.random()* 127) + 127).toString(16);
     var g = (Math.round(Math.random()* 127) + 127).toString(16);
