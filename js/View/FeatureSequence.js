@@ -17,7 +17,7 @@ define([
 		   domClass,
            domStyle,
 		   query,
-           ToggleButton
+           ToggleButton,
            Dialog
        ) {
 return declare( null,
