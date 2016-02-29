@@ -31,7 +31,7 @@ return declare( null,
         this.feature = feature;
         this.seq = seq;
         this.opt = opt;
-        this.subf_byType = getSubFeats(feature);
+        this.subf_byType = this._getSubFeats(feature);
         this._hidden = [];
         this._highlighted = [];
         this._lowercase = [];
@@ -261,73 +261,73 @@ return declare( null,
 
         return seqBox;
 
-	}
+	},
+
+    /**
+     * Title: getSubFeats
+     * Description: Creates a subf_byType object containing arrays of subfeatures,
+     *  with each type of subfeature in a separate array
+     * @param {feature (jbrowse object)}
+     * @returns {subf_byType (FeatureSequence object)}
+     */
+    _getSubFeats: function (feature) {
+
+	    //console.log("Calling getSubFeats"); //TWS DEBUG
+
+	    var feature_coords = [feature.get('start'), feature.get('end')]
+            .sort(function(a,b){return a-b;}); //swap if out of order
+
+	    //feature_coords.sort(function(a,b){return a-b;});
+
+	    var feature_strand = feature.get('strand');
+
+	    var arraysByType = {};
+	    var subfeatures = feature.get('subfeatures');
+	    subfeatures.forEach(function(f, ind) {
+
+		    var subfeat_coords = [f.get('start'), f.get('end')]
+                .sort(function(a,b){return a-b;}); //swap if out of order
+
+		    //subfeat_coords.sort(function(a,b){return a-b;});
+
+            //All coordinates are made relative to feature start
+		    if (feature_strand == 1) {
+			    var subf_start = subfeat_coords[0] - feature_coords[0]; 
+			    var subf_end = subfeat_coords[1] - feature_coords[0]; 
+		    } else if (feature_strand == -1) {
+			    var subf_start = feature_coords[1] - subfeat_coords[1];
+			    var subf_end = feature_coords[1] - subfeat_coords[0];
+		    }
+
+		    var subf_strand = f.get('strand');
+		    var subf_type = f.get('type');
+
+		    var subf_obj = {'start':subf_start, 'end':subf_end, 'strand':subf_strand, 'type':subf_type, 'id': subf_type+'_'+(ind+1)};
+
+		    //Create a key for the type value if it doesn't yet exist
+		    if (!(subf_type in arraysByType)) {
+			    arraysByType[subf_type] = [];
+		    }
+
+		    //Push subfeature object to appropriate array of subfeatures
+		    arraysByType[subf_type].push(subf_obj)
+	    });
+
+        //Sort by start location note that these coordinates are relative
+	    for (var type in arraysByType) {
+		    sortByKey(arraysByType[type], 'start');
+	    }
+
+        //if type exon exists, create corresponding introns
+	    if ('exon' in arraysByType) {
+		    arraysByType['intron'] = intronsFromExons(arraysByType.exon);
+	    }
+	
+	    return arraysByType;
+    }
             
 });
 });
-
-/**
- * Title: getSubFeats
- * Description: Creates a subf_byType object containing arrays of subfeatures,
- *  with each type of subfeature in a separate array
- * @param {feature (jbrowse object)}
- * @returns {subf_byType (FeatureSequence object)}
- */
-function getSubFeats (feature) {
-
-	//console.log("Calling getSubFeats"); //TWS DEBUG
-
-	var feature_coords = [feature.get('start'), feature.get('end')]
-        .sort(function(a,b){return a-b;}); //swap if out of order
-
-	//feature_coords.sort(function(a,b){return a-b;});
-
-	var feature_strand = feature.get('strand');
-
-	var arraysByType = {};
-	var subfeatures = feature.get('subfeatures');
-	subfeatures.forEach(function(f, ind) {
-
-		var subfeat_coords = [f.get('start'), f.get('end')]
-            .sort(function(a,b){return a-b;}); //swap if out of order
-
-		//subfeat_coords.sort(function(a,b){return a-b;});
-
-        //All coordinates are made relative to feature start
-		if (feature_strand == 1) {
-			var subf_start = subfeat_coords[0] - feature_coords[0]; 
-			var subf_end = subfeat_coords[1] - feature_coords[0]; 
-		} else if (feature_strand == -1) {
-			var subf_start = feature_coords[1] - subfeat_coords[1];
-			var subf_end = feature_coords[1] - subfeat_coords[0];
-		}
-
-		var subf_strand = f.get('strand');
-		var subf_type = f.get('type');
-
-		var subf_obj = {'start':subf_start, 'end':subf_end, 'strand':subf_strand, 'type':subf_type, 'id': subf_type+'_'+(ind+1)};
-
-		//Create a key for the type value if it doesn't yet exist
-		if (!(subf_type in arraysByType)) {
-			arraysByType[subf_type] = [];
-		}
-
-		//Push subfeature object to appropriate array of subfeatures
-		arraysByType[subf_type].push(subf_obj)
-	});
-
-    //Sort by start location note that these coordinates are relative
-	for (var type in arraysByType) {
-		sortByKey(arraysByType[type], 'start');
-	}
-
-    //if type exon exists, create corresponding introns
-	if ('exon' in arraysByType) {
-		arraysByType['intron'] = intronsFromExons(arraysByType.exon);
-	}
-	
-	return arraysByType;
-}
 
 /**
  * Title: intronsFromExons
