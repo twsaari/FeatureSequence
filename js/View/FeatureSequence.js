@@ -62,6 +62,8 @@ return declare( null,
             innerHTML: ''
         },container);
 
+        console.log(self.subf_byType);
+
         Object.keys(self.subf_byType).forEach(function(type){
 
             var row = dojo.create('tr', {
