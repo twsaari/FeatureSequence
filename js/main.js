@@ -4,6 +4,7 @@ define([
            'dojo/_base/array',
            'dojo/_base/lang',
            'dojo/Deferred',
+           'dojo/DeferredList',
            'dojo/dom',
            'dojo/dom-construct',
 		   'dojo/dom-class',
@@ -18,13 +19,14 @@ define([
            array,
            lang,
            Deferred,
+           DeferredList,
            dom,
 		   domConstruct,
 		   domClass,
 		   query,
            Util,
            JBrowsePlugin,
-            FeatureSequence
+           FeatureSequence
        ) {
 return declare( JBrowsePlugin,
 {
@@ -32,133 +34,55 @@ return declare( JBrowsePlugin,
 
         // do anything you need to initialize your plugin here
 
-		//TWS: Will need to change these to local paths if this works
-/*
-		[
-          'plugins/FeatureSequence/lib/FeatureSequence.js',
-          'plugins/SeqLighter/jslib/biojs/src/main/javascript/Biojs.js',
-          'plugins/SeqLighter/jslib/biojs/src/main/javascript/Biojs.Tooltip.js',
-          'plugins/SeqLighter/jslib/biojs/src/main/javascript/Biojs.Sequence.js',
-          'plugins/SeqLighter/jslib/biojs/src/main/resources/dependencies/jquery/jquery-1.4.2.min.js',
-          'plugins/SeqLighter/jslib/biojs/src/main/resources/dependencies/jquery/jquery-ui-1.8.2.custom.min.js'
-        ].forEach(function(src) {
-          var script = document.createElement('script');
-          script.src = src;
-          script.async = false;
-          document.head.appendChild(script);
-        });
-*/
         console.log( "FeatureSequence plugin initialized." );
     },
+
+    /**
+     * Title: callFxn
+     * Description: Creates deferred feature and sequence objects 
+     * pulling information from JBrowse objects. Then creates a FeatureSequence 
+     * from the resolved objects.
+     *
+     * @param {track (jbrowse object), feature (jbrowse object)}
+     * @returns { '' (empty string) }
+     */
+    callFxn: function(track, feature) {
+        //console.log("Calling callFxn."); //TWS DEBUG
+
+        var seq_deferred = this._getSequence(track,feature);
+        var feat_deferred = this._getFeatureAttr(feature);      
+
+        var dfList = new DeferredList([feat_deferred,seq_deferred]);  
         
-    testFxn: function(track, feature) {
-        console.log("Calling testFxn."); //TWS DEBUG
-
-        var seq_obj = this.getSequence(track,feature);
-
+        //After dfList is resolved, create a new FeatureSequence
+        dfList.then(function(results){
 /*
-        var subfeats = feature.get('subfeatures');
-        var types = subfeats.map(function(value) { return value.get('type'); }).sort().filter(function(el,i,a){if(i==a.indexOf(el))return 1;return 0});
-        //console.log(types); //TWS DEBUG
-
-        //Get sequence and create FeatureSequence
+            console.log(results[0][1]); //feat
+            console.log(results[1][1]); //seq
+            //To export the FeatureSequence object in JSON, uncomment the following:
+            //alert(JSON.stringify([results[0][1], results[1][1], {seqDivName: 'seq_display'}]));
 */
-        
 
-        console.log("Testing Deferred");
-
-        //var foob = seqDeferred.then;
-        //console.log(foob);
-
-        //console.log(seq_obj);
-            
-        seq_obj.then(function(seq_obj){
-            //FeatureSequence(feature, sequence, {options})
-            var FeatSeq = new FeatureSequence(feature, seq_obj, {
+            var FeatSeq = new FeatureSequence(results[0][1], results[1][1], {
                 seqDivName: 'seq_display'
             });
 
-/*
-            var myDialog = new Dialog({
-                title: "FeatureSequence Viewer",
-                content: container
-            });
-            myDialog.show();
-*/
-            //console.log(seq_obj);
         });
 
-        //Create divs
-        //var container = this._createDivs();
-
-        //Create buttons
-        //this._createButtons(types); //TWS Left off here - this causes errors
-
-        
-        //console.log(container);
-        return 'This popup message is only necessary to initialize FeatureSequence Viewer';//container; //instance.FeatSeq._contentDiv; //dom.byId('FeatureSeq_container');
-    },
-/*
-    _createButtons: function(types_arr) {
-        console.log("Calling createButtons"); //TWS DEBUG
-
-        types_arr.forEach(function(type) {
-                
-            var row = dojo.create('tr', {
-                id: type+'_buttonRow',
-                className:'oddRow',
-                innerHTML: '<td><b>'+type+'s'+'</b></td>'
-            }, dom.byId('button_meta_table') );
-
-            var highlightButton = new dijit.form.ToggleButton({
-		        id: type+"_highlightButton",
-		        checked: false,
-    		    //iconClass: "dijitCheckBoxIcon",
-	    	    label: 'Highlight'
-    	    });
-
-	        //dojo.addClass(highlightButton.domNode, "highlightButton");
-
-	        var hideShowButton = new dijit.form.ToggleButton({
-		        id: type+"hide",
-		        checked: false,
-		        //iconClass: "dijitCheckBoxIcon",
-		        label: 'Hide'
-	        });
-
-	        var textCaseButton = new dijit.form.ToggleButton({
-		        id: type+"Lowercase",
-		        checked: false,
-		        //iconClass: "dijitCheckBoxIcon",
-		        label: 'Lowercase'
-	        });
-
-            highlightButton.placeAt(row);
-	        hideShowButton.placeAt(row);
-	        textCaseButton.placeAt(row);
-
-        });
-
+        return '';
     },
 
-    _createDivs: function() {
-        console.log("Calling createDivs"); //TWS DEBUG
-        var container = dojo.create('div', {
-    		id: "FeatureSeq_container", 
-	    	className: 'sequenceViewerContainer', 
-	    	innerHTML: '<b>FOO</b>' 
-	    });
-	    var button_container = dojo.create('div', {
-	    	id: 'button_container',
-	    	className: 'sequenceViewer_topFields' 
-	    }, container );
-	    dojo.create('table', { id: "button_meta_table" }, button_container );
-        dojo.create( 'div', { id: "seq_display", innerHTML: 'SEQ'},container);
-        return container;
-    },
-*/
-    getSequence: function( track, feature) {
-        console.log("Calling getSequence");
+    /**
+     * Title: _getSequence
+     * Description: Gets sequence from track store, and creates a deferred
+     * seq object for input into a new FeatureSequence. 
+     * Also includes 4k bp upstream and downstream
+     *
+     * @param {track (jbrowse object), feature (jbrowse object)}
+     * @returns { seqDeferred.promise (sequence object promise)}
+     */
+    _getSequence: function( track, feature) {
+        //console.log("Calling getSequence"); //TWS DEBUG
 
         var seqDeferred = new Deferred();
 
@@ -172,8 +96,7 @@ return declare( JBrowsePlugin,
 
         	if( refSeqStore ) {
         	    refSeqStore.getReferenceSequence(
-    //	{ ref: track.store.args.browser.refSeq.name, start: start_coord-4000, end: end_coord+4000},
-              	    { ref: track.store.args.browser.refSeq.name, start: getStart, end: getEnd}, //TWS DEBUG
+              	    { ref: track.store.args.browser.refSeq.name, start: getStart, end: getEnd}, 
                         dojo.hitch( this, function (fullSeq){
                             if (feature.get('strand') == -1) {
                                 fullSeq = Util.revcom(fullSeq);
@@ -182,29 +105,145 @@ return declare( JBrowsePlugin,
                             var seq_obj = {
                                 upstream: fullSeq.substr(0,buffer), 
                                 target: fullSeq.substr(buffer,targetSeqLen),
-                                downstream: fullSeq.substr(-(targetSeqLen+buffer))
+                                downstream: fullSeq.substr(targetSeqLen+buffer)
                             };
 
                             seqDeferred.resolve(seq_obj);                        
-    /*
-                            //FeatureSequence(feature, sequence, {options})
-                            var FeatSeq = new FeatureSequence(feature, fullSeq, {
-                                seqDivName: 'seq_display',
-                                hidden: [],
-                                highlighted: [],
-                                lowercase: []
-                            });
-                            //console.log(this)
-                            //FeatSeq.show();
-    */
+
                         })
                     );
                 }
             })
             );
 
-        return seqDeferred.promise
-    }
+        return seqDeferred.promise;
+    },
 
+    /**
+     * Title: _getFeatAttr
+     * Description: Gets feature main attributes and subfeatures from jbrowse object
+     * and creates a deferred feature object for input into a new FeatureSequence
+     * @param {feature (jbrowse object)}
+     * @returns { featDeferred.promise (feature object promise)}
+     */
+    _getFeatureAttr: function (feature) {
+        //console.log("Calling _getFeatureAttr"); //TWS DEBUG
+        var featDeferred = new Deferred();
+        var featAttr = { 
+            _id: feature.get('id'),
+            _start: feature.get('start'),
+            _end: feature.get('end'),
+            _strand: feature.get('strand'),
+            subf_byType: this._getSubFeats(feature)
+        };
+        
+        featDeferred.resolve(featAttr);
+        return featDeferred.promise;
+    },
+        
+
+    /**
+     * Title: _getSubFeats
+     * Description: Creates a subf_byType object containing arrays of subfeatures,
+     *  with each type of subfeature in a separate array
+     * @param {feature (jbrowse object)}
+     * @returns {subf_byType (FeatureSequence object)}
+     */
+    _getSubFeats: function (feature) {
+	    //console.log("Calling getSubFeats"); //TWS DEBUG
+
+	    var feature_coords = [feature.get('start'), feature.get('end')]
+            .sort(function(a,b){return a-b;}); //swap if out of order
+
+	    var feature_strand = feature.get('strand');
+
+	    var arraysByType = {};
+	    var subfeatures = feature.get('subfeatures');
+	    subfeatures.forEach(function(f, ind) {
+
+		    var subfeat_coords = [f.get('start'), f.get('end')]
+                .sort(function(a,b){return a-b;}); //swap if out of order
+
+            //All coordinates are made relative to feature start
+		    if (feature_strand == 1) {
+			    var subf_start = subfeat_coords[0] - feature_coords[0]; 
+			    var subf_end = subfeat_coords[1] - feature_coords[0]; 
+		    } else if (feature_strand == -1) {
+			    var subf_start = feature_coords[1] - subfeat_coords[1];
+			    var subf_end = feature_coords[1] - subfeat_coords[0];
+		    }
+
+		    var subf_strand = f.get('strand');
+		    var subf_type = f.get('type');
+
+		    var subf_obj = {'start':subf_start, 'end':subf_end, 'strand':subf_strand, 'type':subf_type, 'id': subf_type+'_'+(ind+1)};
+
+		    //Create a key for the type value if it doesn't yet exist
+		    if (!(subf_type in arraysByType)) {
+			    arraysByType[subf_type] = [];
+		    }
+
+		    //Push subfeature object to appropriate array of subfeatures
+		    arraysByType[subf_type].push(subf_obj)
+	    });
+
+        //Sort by start location note that these coordinates are relative
+	    for (var type in arraysByType) {
+		    this.sortByKey(arraysByType[type], 'start');
+	    }
+
+        //if type exon exists, create corresponding introns
+	    if ('exon' in arraysByType) {
+		    arraysByType['intron'] = this.intronsFromExons(arraysByType.exon);
+	    }
+	
+	    return arraysByType;
+    },
+
+    /**
+     * Title: intronsFromExons
+     * Description: Create array of introns in between the exons
+     * @param {exons(Array)}
+     * @returns {introns(Array)}
+     */
+    intronsFromExons: function (exons) {
+
+	    //console.log("Calling intronsFromExons"); //TWS DEBUG
+	    var intronArray = [];
+
+	    for (var i = 0; i < exons.length-1; i++) {
+
+		    var intron_start = exons[i].end;
+		    var intron_end = exons[i+1].start;
+
+		    intronArray[i] = {'start':intron_start,'end':intron_end, 'strand':exons[i].strand, 'type':'intron', 'id': 'intron_'+(i+1)};
+        }
+	
+	    return intronArray;
+    },
+
+    /**
+     * Title: sortByKey
+     * Description: Generalized sorting for associative arrays.
+     * @param {Array, Key(String)}
+     * @returns {Sorted_Array}
+     */
+    sortByKey: function (array, key) {
+
+	    //console.log("Calling sortByKey"); //TWS DEBUG
+        return array.sort(function(a, b) {
+            var x = a[key];
+            var y = b[key];
+
+            if (typeof x == "string")
+            {
+                x = x.toLowerCase(); 
+                y = y.toLowerCase();
+            }
+
+            return ((x < y) ? -1 : ((x > y) ? 1 : 0));
+        });
+    }
+            
 });
 });
