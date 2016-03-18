@@ -2,10 +2,12 @@ define([
            'dojo/_base/declare',
            'dojo/_base/array',
            'dojo/_base/lang',
+           'dojo/Deferred',
 		   'dojo/dom-construct',
 		   'dojo/dom-class',
            'dojo/dom-style',
 		   'dojo/query',
+           'dijit/registry',
            'dijit/form/ToggleButton',
            'dijit/Dialog'
        ],
@@ -13,10 +15,12 @@ define([
            declare,
            array,
            lang,
+           Deferred,
 		   domConstruct,
 		   domClass,
            domStyle,
 		   query,
+           registry,
            ToggleButton,
            Dialog
        ) {
@@ -158,16 +162,6 @@ return declare( null,
         });
 
         ['upstream','downstream'].forEach(function(type) {
-            if (type == "upstream") {
-                var nodesList = dojo.query('upstreamSequence').reverse();
-            } else {
-                var nodesList = dojo.query('downstreamSequence');
-            }
-
-            //TWS Left Off Here 3-18-2016: Trying to get nodeList to work for both cases. Currently undefined, don't know why
-
-            //var nodesList = type == "upstream" ? dojo.query('.upstreamSequence').reverse() : dojo.query('.downstreamSequence');
-            console.log(nodesList[0]);
 
             var row = dojo.create('tr', {
                 //id: type+'_buttonRow',
@@ -207,7 +201,7 @@ return declare( null,
             }, row );
 
             var SeqMenu = new dijit.form.Select({
-                name: type+'SeqMenu',
+                className: type+'SeqMenu',
             	id: type+'SeqMenu',
                 options: [
 	                { label: "Select View", value: "-1" , selected:true},
@@ -219,18 +213,7 @@ return declare( null,
                     { label: "3000 bp", value: "5"}, 
                     { label: "3500 bp", value: "6"},
                     { label: "4000 bp", value: "7"}
-                ],
-                onChange: function() {
-                    var selected = this.get("value");
-                    nodesList.forEach(function(node,index) {
-                        console.log(node);
-			            if (index <= selected) {
-                            node.style.display = "inline";
-                        } else {
-                            node.style.display = "none";
-                        }
-                    });
-                }
+                ]
             });
 /*
             SeqMenu.on("change", function() {
@@ -266,8 +249,6 @@ return declare( null,
                         dojo.query('.'+type+'Sequence').forEach(function(node) {
                             var text = node.innerHTML.toUpperCase();
             				node.innerHTML = text;
-                        });				        self.feat.subf_byType[type].forEach(function(lower) {
-                            self._removeLowercase(lower);
                         });
 				        this.set('label', 'Lowercase');
 			        }
@@ -278,86 +259,28 @@ return declare( null,
 	        textCaseButton.placeAt(textCase_td);
         });
 
-
-
-/*
-            var SeqMenu = new dijit.form.Select({
-                name: type+'SeqMenu',
-            	id: type+'SeqMenu',
-                options: [
-	                { label: "Select View", value: "-1" , selected:true},
-                    { label: "500 bp", value: "0" },
-                    { label: "1000 bp", value: "1"},
-                    { label: "1500 bp", value: "2"},
-                    { label: "2000 bp", value: "3"},
-                    { label: "2500 bp", value: "4"},
-                    { label: "3000 bp", value: "5"}, 
-                    { label: "3500 bp", value: "6"},
-                    { label: "4000 bp", value: "7"}
-                ]
-            });
-
-            SeqMenu.on("change", function() {
-                var selected = this.get("value");
-                dojo.query('.'+type+'Sequence').reverse().forEach(function(node,index) {
-			        if (index <= selected) {
-                        node.style.display = "inline";
-                    } else {
-                        node.style.display = "none";
-                    }
-                });
-		    });
-
-        var downstreamRow = dojo.create('tr', {
-            //id: type+'_buttonRow',
-            className:'buttonRow',
-            innerHTML: '<td class="col1_td"><b class="rowName">downstream</b></td>'
-        }, metaTable );
-
-        var downstream_td = dojo.create('td', {
-            className: 'button_td'
-        }, downstreamRow );
-
-        var downstreamSeqMenu = new dijit.form.Select({
-            name: "downstreamSeqMenu",
-        	id: "downstreamSeqMenu",
-            options: [
-	            { label: "Select View", value: "-1" , selected:true},
-                { label: "500 bp", value: "0" },
-                { label: "1000 bp", value: "1"},
-                { label: "1500 bp", value: "2"},
-                { label: "2000 bp", value: "3"},
-                { label: "2500 bp", value: "4"},
-                { label: "3000 bp", value: "5"}, 
-                { label: "3500 bp", value: "6"},
-                { label: "4000 bp", value: "7"}
-            ]
-        });
-
-        upstreamSeqMenu.placeAt(upstream_td);
-        upstreamSeqMenu.on("change", function() {
+        registry.byId('upstreamSeqMenu').on("change", function() {
             var selected = this.get("value");
             dojo.query('.upstreamSequence').reverse().forEach(function(node,index) {
-			    if (index <= selected) {
+	            if (index <= selected) {
                     node.style.display = "inline";
                 } else {
                     node.style.display = "none";
                 }
             });
-		});
-            
-        downstreamSeqMenu.placeAt(downstream_td);
-        downstreamSeqMenu.on("change", function() {
+        });
+        
+        registry.byId('downstreamSeqMenu').on("change", function() {
             var selected = this.get("value");
             dojo.query('.downstreamSequence').forEach(function(node,index) {
-			    if (index <= selected) {
+	            if (index <= selected) {
                     node.style.display = "inline";
                 } else {
                     node.style.display = "none";
                 }
             });
-		});
-*/
+        });
+
         var seqBox = this._DrawFasta();
 
         domConstruct.place(seqBox,container);
@@ -366,7 +289,9 @@ return declare( null,
             title: "FeatureSequence Viewer",
             content: container,
             onHide: function() {
-                myDialog.destroy()
+                registry.byId('downstreamSeqMenu').destroy();
+                registry.byId('upstreamSeqMenu').destroy();
+                myDialog.destroy();
             }
         });
 
@@ -484,7 +409,9 @@ return declare( null,
             domConstruct.place(spn, seqBox);
         });
 
-        return seqBox;
+
+
+    return seqBox;
 
 	}
             
