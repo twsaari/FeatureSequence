@@ -103,32 +103,6 @@ return declare( null,
 		        }
     	    });
 
-            var hideShow_td = dojo.create('td', {
-                className: 'button_td'
-            }, row );
-
-	        var hideShowButton = new ToggleButton({
-		        //id: type+"hide",
-                style: "width: 48px;",
-		        checked: false,
-		        //iconClass: "dijitCheckBoxIcon",
-		        label: 'Hide',
-                onChange: function(){
-			        if (this.checked) {
-				        self.feat.subf_byType[type].forEach(function(hidden) {
-                            self._addHidden(hidden);
-                        });
-				        this.set('label', 'Show');
-			        }
-			        else {
-				        self.feat.subf_byType[type].forEach(function(hidden) {
-                            self._removeHidden(hidden);
-                        });
-				        this.set('label', 'Hide');
-			        }
-		        }
-	        });
-
             var textCase_td = dojo.create('td', {
                 className: 'button_td'
             }, row );
@@ -155,9 +129,35 @@ return declare( null,
 		        }
 	        });
 
+            var hideShow_td = dojo.create('td', {
+                className: 'button_td'
+            }, row );
+
+	        var hideShowButton = new ToggleButton({
+		        //id: type+"hide",
+                style: "width: 48px;",
+		        checked: false,
+		        //iconClass: "dijitCheckBoxIcon",
+		        label: 'Hide',
+                onChange: function(){
+			        if (this.checked) {
+				        self.feat.subf_byType[type].forEach(function(hidden) {
+                            self._addHidden(hidden);
+                        });
+				        this.set('label', 'Show');
+			        }
+			        else {
+				        self.feat.subf_byType[type].forEach(function(hidden) {
+                            self._removeHidden(hidden);
+                        });
+				        this.set('label', 'Hide');
+			        }
+		        }
+	        });
+
             highlightButton.placeAt(highlight_td);
-	        hideShowButton.placeAt(hideShow_td);
 	        textCaseButton.placeAt(textCase_td);
+	        hideShowButton.placeAt(hideShow_td);
 
         });
 
@@ -196,37 +196,6 @@ return declare( null,
 		        }
     	    });
 
-            var viewLen_td = dojo.create('td', {
-                className: 'button_td'
-            }, row );
-
-            var SeqMenu = new dijit.form.Select({
-                className: type+'SeqMenu',
-            	id: type+'SeqMenu',
-                options: [
-	                { label: "Select View", value: "-1" , selected:true},
-                    { label: "500 bp", value: "0" },
-                    { label: "1000 bp", value: "1"},
-                    { label: "1500 bp", value: "2"},
-                    { label: "2000 bp", value: "3"},
-                    { label: "2500 bp", value: "4"},
-                    { label: "3000 bp", value: "5"}, 
-                    { label: "3500 bp", value: "6"},
-                    { label: "4000 bp", value: "7"}
-                ]
-            });
-/*
-            SeqMenu.on("change", function() {
-                var selected = this.get("value");
-                nodesList.forEach(function(node,index) {
-			        if (index <= selected) {
-                        node.style.display = "inline";
-                    } else {
-                        node.style.display = "none";
-                    }
-                });
-		    });
-*/
             var textCase_td = dojo.create('td', {
                 className: 'button_td'
             }, row );
@@ -254,9 +223,31 @@ return declare( null,
 			        }
 		        }
 	        });
+
+            var viewLen_td = dojo.create('td', {
+                className: 'button_td'
+            }, row );
+
+            var SeqMenu = new dijit.form.Select({
+                style: "width: 92px",
+                className: type+'SeqMenu',
+            	id: type+'SeqMenu',
+                options: [
+	                { label: "Select View", value: "-1" , selected:true},
+                    { label: "500 bp", value: "0" },
+                    { label: "1000 bp", value: "1"},
+                    { label: "1500 bp", value: "2"},
+                    { label: "2000 bp", value: "3"},
+                    { label: "2500 bp", value: "4"},
+                    { label: "3000 bp", value: "5"}, 
+                    { label: "3500 bp", value: "6"},
+                    { label: "4000 bp", value: "7"}
+                ]
+            });
+
             highlightButton.placeAt(highlight_td);
-	        SeqMenu.placeAt(viewLen_td);
 	        textCaseButton.placeAt(textCase_td);
+	        SeqMenu.placeAt(viewLen_td);
         });
 
         registry.byId('upstreamSeqMenu').on("change", function() {
