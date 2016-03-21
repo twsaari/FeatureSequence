@@ -52,6 +52,7 @@
 
 .sequence_box {
 	display: inline-block;
+	font-family : monospace;
 	word-wrap: break-word;
 	padding: 16px 32px;
     background-color: #FFFFFF;
