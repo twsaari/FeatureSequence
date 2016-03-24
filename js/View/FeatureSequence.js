@@ -65,9 +65,7 @@ return declare( null,
             innerHTML: ''
         },container);
 
-        //console.log(self.subf_byType);
-
-        Object.keys(self.feat.subf_byType).forEach(function(type){
+        self.feat._types.forEach(function(type){
 
             var row = dojo.create('tr', {
                 //id: type+'_buttonRow',
@@ -89,16 +87,11 @@ return declare( null,
 			        if (this.checked) {
                         var colorstr = pastelColors();
 				        this.set('label', 'Unhighlight');
-				        self.feat.subf_byType[type].forEach(function(highlight) {
-                            highlight.color = colorstr;
-                            self._addHighlight(highlight);
-                        });
+                        self._addHighlight(type, colorstr);
 			        }
 			        else {
 				        this.set('label', 'Highlight');
-				        self.feat.subf_byType[type].forEach(function(highlight) {
-                            self._removeHighlight(highlight);
-                        });
+                        self._removeHighlight(type);
 			        }
 		        }
     	    });
@@ -115,15 +108,11 @@ return declare( null,
 		        label: 'Lowercase',
 		        onChange: function(){
 			        if (this.checked) {
-				        self.feat.subf_byType[type].forEach(function(lower) {
-                            self._addLowercase(lower);
-                        });
+                        self._addLowercase(type);
 				        this.set('label', 'Uppercase');
 			        }
 			        else {
-				        self.feat.subf_byType[type].forEach(function(lower) {
-                            self._removeLowercase(lower);
-                        });
+                        self._removeLowercase(type);
 				        this.set('label', 'Lowercase');
 			        }
 		        }
@@ -141,15 +130,11 @@ return declare( null,
 		        label: 'Hide',
                 onChange: function(){
 			        if (this.checked) {
-				        self.feat.subf_byType[type].forEach(function(hidden) {
-                            self._addHidden(hidden);
-                        });
+                        self._addHidden(type);
 				        this.set('label', 'Show');
 			        }
 			        else {
-				        self.feat.subf_byType[type].forEach(function(hidden) {
-                            self._removeHidden(hidden);
-                        });
+                        self._removeHidden(type);
 				        this.set('label', 'Hide');
 			        }
 		        }
@@ -160,6 +145,9 @@ return declare( null,
 	        hideShowButton.placeAt(hideShow_td);
 
         });
+
+        //TWS Left Off Here 3-23-2016. Next step: Possibly simplify code for Highlight
+        // and Lowercase buttons
 
         ['upstream','downstream'].forEach(function(type) {
 
@@ -183,15 +171,11 @@ return declare( null,
 			        if (this.checked) {
                         var colorstr = pastelColors();
 				        this.set('label', 'Unhighlight');
-                        dojo.query('.'+type+'Sequence').forEach(function(node) {
-                            domStyle.set(node, "background-color", colorstr);
-                        });
+                        self._addHighlight(type, colorstr);
 			        }
 			        else {
 				        this.set('label', 'Highlight');
-                        dojo.query('.'+type+'Sequence').forEach(function(node) {
-                            domStyle.set(node, "background-color", "#ffffff");
-                        });
+                        self._removeHighlight(type);
 			        }
 		        }
     	    });
@@ -208,17 +192,11 @@ return declare( null,
 		        label: 'Lowercase',
 		        onChange: function(){
 			        if (this.checked) {
-                        dojo.query('.'+type+'Sequence').forEach(function(node) {
-                            var text = node.innerHTML.toLowerCase();
-            				node.innerHTML = text;
-                        });
+                        self._addLowercase(type);
 				        this.set('label', 'Uppercase');
 			        }
 			        else {
-                        dojo.query('.'+type+'Sequence').forEach(function(node) {
-                            var text = node.innerHTML.toUpperCase();
-            				node.innerHTML = text;
-                        });
+                        self._removeLowercase(type);
 				        this.set('label', 'Lowercase');
 			        }
 		        }
@@ -291,109 +269,102 @@ return declare( null,
 
     },
 
-	_addHidden: function(hidden) {
-        this._hidden.push(hidden); 
-        this._applyHidden(hidden);
+	_addHidden: function(type) {
+        //console.log("Calling _addHidden"); //TWS DEBUG
+        query('span[subfType=\"'+type+'\"]').forEach(function(span) {
+            domStyle.set(span, "display", "none");
+        });
     },
 
-	_applyHidden: function(h) {
-
-		dojo.query('.sequence').forEach(function(node,index) {
-			if (index >= h.start && index < h.end) {
-				node.style.display = "none";
-			}
-		});
+	_removeHidden: function(type) {
+        //console.log("Calling _removeHidden"); //TWS DEBUG
+        query('span[subfType=\"'+type+'\"]').forEach(function(span) {
+            domStyle.set(span, "display", "inline");
+        });
 	},
 
-	_removeHidden: function(h) {		
-		dojo.query('.sequence').forEach(function(node,index) {
-			if (index >= h.start && index < h.end) {
-				node.style.display = "inline";
-			}
-		});
+    _addHighlight: function(type, color) {
+        //console.log("Calling _addHighlight"); //TWS DEBUG
+        query('span[subfType=\"'+type+'\"]').forEach(function(span) {
+            domStyle.set(span, "background-color", color);
+        });
 	},
 
-    _addHighlight: function(highlight) {
-		this._highlighted.push(highlight);
-		this._applyHighlight(highlight);
+	_removeHighlight: function(type) {
+        //console.log("Calling _removeHighlight"); //TWS DEBUG
+        query('span[subfType=\"'+type+'\"]').forEach(function(span) {
+            domStyle.set(span, "background-color", "#FFF");
+        });
 	},
 
-    _applyHighlight: function(h) {
-		dojo.query('.sequence').forEach(function(node,index) {
-			if (index >= h.start && index < h.end) {
-                domStyle.set(node, "background-color", h.color);
-			}
-		});
+	_addLowercase: function(type) {
+        //console.log("Calling _addLowercase"); //TWS DEBUG
+        query('span[subfType=\"'+type+'\"]').forEach(function(span) {
+            var string = span.innerHTML.toLowerCase();
+            span.innerHTML = string;
+        });
 	},
 
-	_removeHighlight: function(h) {
-		dojo.query('.sequence').forEach(function(node,index,arr) {
-			if (index >= h.start && index < h.end) {
-                domStyle.set(node, "background-color", "#FFF");
-			}
-		});
-	},
-
-	_addLowercase: function(lower) {
-		this._lowercase.push(lower);
-		this._applyLowercase(lower);
-	},
-
-	_applyLowercase: function(l) {		
-		dojo.query('.sequence').forEach(function(node,index) {
-			if (index >= l.start && index < l.end) {
-				var base = node.innerHTML.toLowerCase();
-				node.innerHTML = base;
-			}
-		});
-	},
-
-	_removeLowercase: function(l) {		
-		dojo.query('.sequence').forEach(function(node,index) {
-			if (index >= l.start && index < l.end) {
-				var base = node.innerHTML.toUpperCase();
-				node.innerHTML = base;
-			}
-		});
+	_removeLowercase: function(type) {
+        //console.log("Calling _removeLowercase"); //TWS DEBUG
+        query('span[subfType=\"'+type+'\"]').forEach(function(span) {
+            var string = span.innerHTML.toUpperCase();
+            span.innerHTML = string;
+        });
 	},
 
     _DrawFasta: function() {
 		//console.log("Calling DrawFasta"); //TWS debug
 
+        //Split upstream/downstream sequence into 500bp chunks
         var upstream_arr = this.seq.upstream.toUpperCase().match(/.{1,500}/g);
-
-		var target_arr = this.seq.target.toUpperCase().split('');
-
         var downstream_arr = this.seq.downstream.toUpperCase().match(/.{1,500}/g);
 
+        var targetSeq = this.seq.target.toUpperCase();
+        var subfeatures = this.feat._subfeatures;
+
+        //Fill in gaps in subfeatures - add in results from fillTheGaps() and re-sort
+        subfeatures = subfeatures.concat(fillTheGaps(this.feat._relCoords, subfeatures)).sort(function(a,b){return a.start - b.start});
+
+        //Split target sequence based on subfeatures
+        var target_arr = array.map(subfeatures, function(obj) {
+
+            return {type: obj.type, seq: targetSeq.substring(obj.start, obj.end)};
+            //TWS Possible improvement: include id: obj.id here, and use this to identify divs rather than querying by subfType attribute
+        });
+
+        //Create sequence box
 		var seqBox = dojo.create('div', { 
 			className: 'sequence_box',
 			innerHTML: '<span class="sequence_title">'+'&gt' + this.feat._id + '</span><br>'
-			//innerHTML: '<span class="sequence_title">'+'&gt' + this.feature.get('id') + ' '+arr.length+' '+'bp'+'</span><br>'
 		});
 
+        //Create spans and place them within sequence box
         upstream_arr.forEach(function(string,index,arr) {
             //indexed in reverse order for upstream. Zero index closest to target sequence
             var complementary_index = arr.length - 1 - index;
             var spn = dojo.create('span', {
                 id: 'upstream_'+complementary_index,
+                subfType: 'upstream',
                 className: 'upstreamSequence',
                 innerHTML: string
             });
             domConstruct.place(spn, seqBox);
         });
 
-		target_arr.forEach(function(base,index) {
+		target_arr.forEach(function(chunk,index) {
             var spn = dojo.create('span', {
                 //id: 'targetseq_'+index,
+                subfType: chunk.type,
                 className: 'sequence',
-                innerHTML: base});
+                innerHTML: chunk.seq});
             domConstruct.place(spn, seqBox);
         });
 
         downstream_arr.forEach(function(string,index) {
             var spn = dojo.create('span', {
                 id: 'downstream_'+index,
+                subfType: 'downstream',
                 className: 'downstreamSequence',
                 innerHTML: string
             });
@@ -408,6 +379,33 @@ return declare( null,
             
 });
 });
+
+function fillTheGaps (coords, subfeatures) {
+
+	var gaps = [];
+	if (subfeatures[0].start != coords.start) {
+  	    //console.log("Filling in the start");
+        var feat = {start: coords.start, end: subfeatures[0].start, type: null}
+        gaps.push(feat);
+    }
+  
+    //console.log("Filling in the middle bits");
+    for (i = 0; i < subfeatures.length - 1; i++) {
+  	    if ( subfeatures[i].end != subfeatures[i+1].start) {
+        	var feat = {start: subfeatures[i].end, end: subfeatures[i+1].start, type: null};
+            gaps.push(feat);
+        }
+    }
+
+    if (subfeatures[subfeatures.length - 1].end != coords.end) {
+  	    //console.log("Filling in the end");
+        var feat = {start: subfeatures[subfeatures.length - 1].end, end: coords.end, type: null};
+        gaps.push(feat);
+    }
+        
+  return gaps;
+  
+}
 
 /**
  * Title: pastelColors

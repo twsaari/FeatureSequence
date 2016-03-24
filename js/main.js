@@ -11,6 +11,7 @@ define([
 		   'dojo/query',
            'JBrowse/Util',
            'JBrowse/Plugin',
+           './View/FeatureSequenceOld',
            './View/FeatureSequence'
        ],
        function(
@@ -26,6 +27,7 @@ define([
 		   query,
            Util,
            JBrowsePlugin,
+           FeatureSequenceOld,
            FeatureSequence
        ) {
 return declare( JBrowsePlugin,
@@ -43,8 +45,12 @@ return declare( JBrowsePlugin,
      * pulling information from JBrowse objects. Then creates a FeatureSequence 
      * from the resolved objects.
      *
+     * TWS FIXME: Possible to return the FeatureSequence container? This would 
+     * give FeatureSequence content directly to contentDialog launched from
+     * the right-click menu
+     *
      * @param {track (jbrowse object), feature (jbrowse object)}
-     * @returns { '' (empty string) }
+     * @returns { 'Foo' (string) }
      */
     callFxn: function(track, feature) {
         //console.log("Calling callFxn."); //TWS DEBUG
@@ -56,20 +62,40 @@ return declare( JBrowsePlugin,
         
         //After dfList is resolved, create a new FeatureSequence
         dfList.then(function(results){
-/*
-            console.log(results[0][1]); //feat
-            console.log(results[1][1]); //seq
+
             //To export the FeatureSequence object in JSON, uncomment the following:
             //alert(JSON.stringify([results[0][1], results[1][1], {seqDivName: 'seq_display'}]));
+
+            var feat = results[0][1];
+            var seq = results[1][1];
+            var opt = {seqDivName: 'seq_display'};
+
+            //To export the FeatureSequence object in JSON, uncomment the following:
+/*
+            var foo = new Dialog({
+                title: 'FeatureSequence JSON Export',
+                content: JSON.stringify([feat,seq,opt]),
+                onHide: function () {
+                    foo.destroy();
+                }
+            });
+            foo.show();
 */
 
-            var FeatSeq = new FeatureSequence(results[0][1], results[1][1], {
-                seqDivName: 'seq_display'
-            });
+        /**
+         * Overlapping subfeatures will interfere with the use of FeatureSequence.
+         * An older method will more accurately display overlapping features, 
+         * but this will suffer a major performance penalty.
+         */
+            if ( checkForOverlap(feat._subfeatures) === -1 ) {
+                var FeatSeq = new FeatureSequence(feat, seq, opt);
+            } else {
+                var FeatSeq = new FeatureSequenceOld(feat, seq, opt);
+            }
 
         });
 
-        return '';
+        return 'Thank you for using the FeatureSequence plugin';
     },
 
     /**
@@ -81,7 +107,7 @@ return declare( JBrowsePlugin,
      * @param {track (jbrowse object), feature (jbrowse object)}
      * @returns { seqDeferred.promise (sequence object promise)}
      */
-    _getSequence: function( track, feature) {
+    _getSequence: function(track, feature) {
         //console.log("Calling getSequence"); //TWS DEBUG
 
         var seqDeferred = new Deferred();
@@ -129,12 +155,17 @@ return declare( JBrowsePlugin,
     _getFeatureAttr: function (feature) {
         //console.log("Calling _getFeatureAttr"); //TWS DEBUG
         var featDeferred = new Deferred();
+
+        var subfeats = this._getSubFeats(feature);
+        var types = this._getTypes(subfeats);
+
         var featAttr = { 
             _id: feature.get('id'),
-            _start: feature.get('start'),
-            _end: feature.get('end'),
+            _absCoords: {start: feature.get('start'), end: feature.get('end')},
+            _relCoords: {start: 0, end: Math.abs(feature.get('end') - feature.get('start'))},
             _strand: feature.get('strand'),
-            subf_byType: this._getSubFeats(feature)
+            _subfeatures: subfeats,
+            _types: types
         };
         
         featDeferred.resolve(featAttr);
@@ -144,10 +175,10 @@ return declare( JBrowsePlugin,
 
     /**
      * Title: _getSubFeats
-     * Description: Creates a subf_byType object containing arrays of subfeatures,
-     *  with each type of subfeature in a separate array
+     * Description: Creates a sorted array of subfeatures,
+     *  with all of the information needed for FeatureSequence
      * @param {feature (jbrowse object)}
-     * @returns {subf_byType (FeatureSequence object)}
+     * @returns {subfeatures (Array)}
      */
     _getSubFeats: function (feature) {
 	    //console.log("Calling getSubFeats"); //TWS DEBUG
@@ -157,9 +188,10 @@ return declare( JBrowsePlugin,
 
 	    var feature_strand = feature.get('strand');
 
-	    var arraysByType = {};
-	    var subfeatures = feature.get('subfeatures');
-	    subfeatures.forEach(function(f, ind) {
+        var types = [];
+        var subfeatures = [];
+
+	    feature.get('subfeatures').forEach(function(f, ind) {
 
 		    var subfeat_coords = [f.get('start'), f.get('end')]
                 .sort(function(a,b){return a-b;}); //swap if out of order
@@ -178,26 +210,44 @@ return declare( JBrowsePlugin,
 
 		    var subf_obj = {'start':subf_start, 'end':subf_end, 'strand':subf_strand, 'type':subf_type, 'id': subf_type+'_'+(ind+1)};
 
-		    //Create a key for the type value if it doesn't yet exist
-		    if (!(subf_type in arraysByType)) {
-			    arraysByType[subf_type] = [];
-		    }
+            //Push subf_type to types array if not seen yet
+            if (array.indexOf(types, subf_type) === -1 ) {
+                types.push(subf_type)
+            }
 
-		    //Push subfeature object to appropriate array of subfeatures
-		    arraysByType[subf_type].push(subf_obj)
+            subfeatures.push(subf_obj)
+
 	    });
 
-        //Sort by start location note that these coordinates are relative
-	    for (var type in arraysByType) {
-		    this.sortByKey(arraysByType[type], 'start');
-	    }
+        //Create introns from exon or CDS features if necessary
+        if (array.indexOf(types, 'intron') === -1) {
 
-        //if type exon exists, create corresponding introns
-	    if ('exon' in arraysByType) {
-		    arraysByType['intron'] = this.intronsFromExons(arraysByType.exon);
-	    }
-	
-	    return arraysByType;
+            if (array.indexOf(types, 'exon') >= 0) {
+
+                //console.log("Exons found. Going to create introns"); //TWS DEBUG
+                var exons = array.filter(subfeatures, function (obj) {
+                    return obj.type === 'exon';
+                });
+
+                this.sortByKey(exons, 'start');
+                subfeatures = subfeatures.concat(this.intronsFromExons(exons));
+
+            } else if (array.indexOf(types, 'CDS') >= 0) {
+
+                //console.log("CDS found. Going to create introns"); //TWS DEBUG
+                var CDS = array.filter(subfeatures, function (obj) {
+                    return obj.type === 'CDS';
+                });
+
+                this.sortByKey(CDS, 'start');
+                subfeatures = subfeatures.concat(this.intronsFromExons(CDS));
+
+            }
+        }
+
+        this.sortByKey(subfeatures, 'start');
+        
+	    return subfeatures;
     },
 
     /**
@@ -243,7 +293,43 @@ return declare( JBrowsePlugin,
 
             return ((x < y) ? -1 : ((x > y) ? 1 : 0));
         });
+    },
+
+    /**
+     * Title: _getTypes
+     * Description: Takes type information from subfeatures array, and
+     * returns an array of unique values for 'type'
+     * @param {subfeatures (Array)}
+     * @returns {types (Array)}
+     */
+    _getTypes: function (subfeatures) {
+        //console.log("Calling getTypes"); //TWS DEBUG
+        var types = array.map(subfeatures, function(obj) {
+            return obj.type;
+        }).sort().filter(function (item, index, self) {
+            return self.indexOf(item) === index;
+        });
+
+        return types;
     }
             
 });
 });
+
+function checkForOverlap (subfeatures) {
+    //console.log("Calling checkForOverlap"); //TWS DEBUG
+    var warnings = '';
+
+    for (i = 0; i < subfeatures.length - 1; i++) {
+        if (subfeatures[i].start < subfeatures[i+1].end && subfeatures[i].end > subfeatures[i+1].start) {
+            warnings += "Warning: Overlap between features: "+subfeatures[i].id+" and "+subfeatures[i+1].id+"\n";
+        }
+    }
+
+    if (warnings.length > 0) {
+        warnings += "Overlapping subfeatures will cause problems in viewing their boundaries.\nThis may also cause the Feature Sequence Viewer to respond slowly. ";
+        alert(warnings);
+    }
+
+    return warnings.length > 0 ? warnings : -1 ;
+}
