@@ -1,5 +1,4 @@
 ##FeatureSequence
-####Author: Travis Saari
 
 FeatureSequence is a plugin built for the genome browser _JBrowse_.
 
@@ -26,8 +25,10 @@ FeatureSequence allows the user to:
 #Clone this repository into your jbrowse/plugins/ directory
 git clone https://github.com/tsaari88/FeatureSequence
 
-#You must also add a way to call FeatureSequence into your trackList
-#Here I'm editing trackList.json:
+##You must also add a way to call FeatureSequence
+# For example, you want to add a right-click menu option to
+# launch FeatureSequence on your favorite Example_Track.
+# Do this by editing trackList.json as follows:
 ...
          "key" : "Example_Track",
          "label" : "Example_Track",
@@ -44,10 +45,12 @@ git clone https://github.com/tsaari88/FeatureSequence
 ```
 
 Now in JBrowse, when right-clicking a feature on Example_Track, you will have the option to "View Feature Sequence."
-This will open up FeatureSequence in a popup dialog with the relevant sequence information for that feature.
+This will open up a Feature Sequence Viewer pop-up dialog with interactive features for a customized sequence view.
 
 ##Additional Details
 
-This plugin borrows concepts and code from a similar plugin called SeqLighter, which can be found [here](https://github.com/Arabidopsis-Information-Portal/SeqLighter).
+FeatureSequence Author: Travis Saari.
 
-I have added the hide/show and text-case-change functionalities, as well as completely re-worked the code to run asynchronously and to minimize dependencies.
+In creating the plugin, I borrowed a lot of concepts and code from a similar plugin called [SeqLighter, which can be found at this link](https://github.com/Arabidopsis-Information-Portal/SeqLighter).
+
+I have added the hide/show and text-case-change functionalities, as well as completely re-worked the code to run asynchronously and to minimize dependencies. I believe that this plugin will provide some much-desired functionality to JBrowse.
