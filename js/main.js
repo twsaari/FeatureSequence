@@ -63,9 +63,6 @@ return declare( JBrowsePlugin,
         //After dfList is resolved, create a new FeatureSequence
         dfList.then(function(results){
 
-            //To export the FeatureSequence object in JSON, uncomment the following:
-            //alert(JSON.stringify([results[0][1], results[1][1], {seqDivName: 'seq_display'}]));
-
             var feat = results[0][1];
             var seq = results[1][1];
             var opt = {seqDivName: 'seq_display'};
@@ -118,7 +115,25 @@ return declare( JBrowsePlugin,
         var getEnd = feature_coords[1] + buffer;
         var targetSeqLen = feature_coords[1]-feature_coords[0];
 
-        track.store.args.browser.getStore('refseqs', dojo.hitch(this,function( refSeqStore ) {
+        var getStoreName = function (cache){
+            var myName = '';
+            for (var cachedStore in cache) {
+                var attr = cache[cachedStore].store;
+                //console.log(attr.name);
+                if (attr.hasOwnProperty('fasta') && attr.hasOwnProperty('name')){
+                    myName = attr.name;
+                    //console.log(attr.name+" is your indexed_fasta store!");
+                }else if (attr.hasOwnProperty('name') && attr.name === 'refseqs') {
+                    myName = attr.name;
+                }
+            }
+
+            return myName.length > 0 ? myName : 'no_store_found';
+        };
+
+        var sequenceStore = getStoreName(track.browser._storeCache);
+
+        track.store.args.browser.getStore(sequenceStore, dojo.hitch(this,function( refSeqStore ) {
 
         	if( refSeqStore ) {
         	    refSeqStore.getReferenceSequence(
