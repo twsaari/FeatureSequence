@@ -120,8 +120,6 @@ return declare( JBrowsePlugin,
         var getEnd = feature_coords[1] + buffer;
         var targetSeqLen = feature_coords[1]-feature_coords[0];
 
-        console.log(track.browser._storeCache);
-
         /**
          * Title: getStoreName
          * Description: Find which store contains indexed fasta or refseqs
