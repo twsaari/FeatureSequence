@@ -117,31 +117,60 @@ return declare( JBrowsePlugin,
         var getStart = feature_coords[0] - buffer;
         var getEnd = feature_coords[1] + buffer;
         var targetSeqLen = feature_coords[1]-feature_coords[0];
+ 
+        //added a call to investigate your stores
+        console.log(track.browser._storeCache);
+        /**
+         * Take a look at the objects here: Find which store is your indexedFasta. I did this
+         * just by checking each stores' urlTemplate for whatever matches my refseq track in trackList.json
+         * (in my case, my indexedFasta did not have a urlTemplate, but all feature tracks did). 
+         * this gave me 'store665925354', which I then put in place of 'refseqs' in the following few lines.
+         */
 
+
+        track.store.args.browser.getStore('store665925354', dojo.hitch(this,function( indexedFastaStore ) {
+          if (indexedFastaStore){
+              console.log("We've got a store");}
+              indexedFastaStore.getReferenceSequence(
+              	    { ref: track.store.args.browser.refSeq.name, start: getStart, end: getEnd}, 
+                    dojo.hitch( this, function (fullSeq){
+                        if (feature.get('strand') == -1) {
+                            fullSeq = Util.revcom(fullSeq);
+                        }
+                        var seq_obj = {
+                           upstream: fullSeq.substr(0,buffer), 
+                           target: fullSeq.substr(buffer,targetSeqLen),
+                           downstream: fullSeq.substr(targetSeqLen+buffer)
+                        };
+                        seqDeferred.resolve(seq_obj);                        
+
+                    })
+              );
+        })
+        );
+/*
         track.store.args.browser.getStore('refseqs', dojo.hitch(this,function( refSeqStore ) {
 
         	if( refSeqStore ) {
         	    refSeqStore.getReferenceSequence(
               	    { ref: track.store.args.browser.refSeq.name, start: getStart, end: getEnd}, 
-                        dojo.hitch( this, function (fullSeq){
-                            if (feature.get('strand') == -1) {
-                                fullSeq = Util.revcom(fullSeq);
-                            }
+                    dojo.hitch( this, function (fullSeq){
+                        if (feature.get('strand') == -1) {
+                            fullSeq = Util.revcom(fullSeq);
+                        }
+                        var seq_obj = {
+                           upstream: fullSeq.substr(0,buffer), 
+                           target: fullSeq.substr(buffer,targetSeqLen),
+                           downstream: fullSeq.substr(targetSeqLen+buffer)
+                        };
+                        seqDeferred.resolve(seq_obj);                        
 
-                            var seq_obj = {
-                                upstream: fullSeq.substr(0,buffer), 
-                                target: fullSeq.substr(buffer,targetSeqLen),
-                                downstream: fullSeq.substr(targetSeqLen+buffer)
-                            };
-
-                            seqDeferred.resolve(seq_obj);                        
-
-                        })
-                    );
-                }
-            })
-            );
-
+                    })
+              );
+          }
+          })
+          );
+*/
         return seqDeferred.promise;
     },
 
