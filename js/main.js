@@ -7,8 +7,9 @@ define([
            'dojo/DeferredList',
            'dojo/dom',
            'dojo/dom-construct',
-		   'dojo/dom-class',
-		   'dojo/query',
+           'dojo/dom-class',
+           'dojo/json',
+           'dojo/query',
            'JBrowse/Util',
            'JBrowse/Plugin',
            './View/FeatureSequenceOld',
@@ -22,9 +23,10 @@ define([
            Deferred,
            DeferredList,
            dom,
-		   domConstruct,
-		   domClass,
-		   query,
+           domConstruct,
+           domClass,
+           JSON,
+           query,
            Util,
            JBrowsePlugin,
            FeatureSequenceOld,
@@ -117,18 +119,39 @@ return declare( JBrowsePlugin,
         var getStart = feature_coords[0] - buffer;
         var getEnd = feature_coords[1] + buffer;
         var targetSeqLen = feature_coords[1]-feature_coords[0];
- 
-        //added a call to investigate your stores
+
         console.log(track.browser._storeCache);
+
         /**
-         * Take a look at the objects here: Find which store is your indexedFasta. I did this
-         * just by checking each stores' urlTemplate for whatever matches my refseq track in trackList.json
-         * (in my case, my indexedFasta did not have a urlTemplate, but all feature tracks did). 
-         * this gave me 'store665925354', which I then put in place of 'refseqs' in the following few lines.
+         * Title: getStoreName
+         * Description: Find which store contains indexed fasta or refseqs
+         * Note: A patch to handle indexed_fasta reference sequences
+         * by checking cached stores' properties.
+         * @param {cache (Object - e.g. track.browser._storeCache)}
+         * @returns {myName (String)}
          */
 
+        var getStoreName = function (cache){
+            var myName = '';
+            for (var cachedStore in cache) {
+                var attr = cache[cachedStore].store;
+                //console.log(attr.name);
+                if (attr.hasOwnProperty('fasta') && attr.hasOwnProperty('name')){
+                    myName = attr.name;
+                    //console.log(attr.name+" is your indexed_fasta store!");
+                }else if (attr.hasOwnProperty('name') && attr.name === 'refseqs') {
+                    myName = attr.name;
+                }
+            }
 
-        track.store.args.browser.getStore('store665925354', dojo.hitch(this,function( indexedFastaStore ) {
+            return myName.length > 0 ? myName : 'no_store';
+        };
+
+        var sequenceStore = getStoreName(track.browser._storeCache);
+        console.log("FeatureSequence will try to rock this with "+sequenceStore);
+
+
+        track.store.args.browser.getStore(sequenceStore, dojo.hitch(this,function( indexedFastaStore ) {
           if (indexedFastaStore){
               console.log("We've got a store");}
               indexedFastaStore.getReferenceSequence(
