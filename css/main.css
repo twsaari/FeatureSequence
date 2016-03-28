@@ -51,10 +51,9 @@
 }
 
 .sequence_box {
-	display: inline-block;
-	font-family : monospace;
-	word-wrap: break-word;
-	padding: 16px 32px;
+    display: inline-block;
+    word-wrap: break-word;
+    padding: 16px 32px;
     background-color: #FFFFFF;
     border: 1px solid #000000;
     margin-right: 40px;
@@ -72,10 +71,12 @@
 
 .upstreamSequence {
     display: none;
+    font-family: monospace;
 }
 
 .downstreamSequence {
     display: none;
+    font-family: monospace;
 }
 
 .dijitDialogPaneContent .container {
