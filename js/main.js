@@ -175,7 +175,7 @@ return declare( JBrowsePlugin,
         var types = this._getTypes(subfeats);
 
         var featAttr = { 
-            _id: feature.get('id'),
+            _id: feature.get('name') || feature.get('name') || feature.get('id') || '>No_name' ,
             _absCoords: {start: feature.get('start'), end: feature.get('end')},
             _relCoords: {start: 0, end: Math.abs(feature.get('end') - feature.get('start'))},
             _strand: feature.get('strand'),
