@@ -322,10 +322,10 @@ return declare( null,
 
         var targetSeq = this.seq.target.toUpperCase();
         var subfeatures = this.feat._subfeatures;
-
+/*
         //Fill in gaps in subfeatures - add in results from fillTheGaps() and re-sort
         subfeatures = subfeatures.concat(fillTheGaps(this.feat._relCoords, subfeatures)).sort(function(a,b){return a.start - b.start});
-
+*/
         //Split target sequence based on subfeatures
         var target_arr = array.map(subfeatures, function(obj) {
 
@@ -380,6 +380,7 @@ return declare( null,
 });
 });
 
+/*
 function fillTheGaps (coords, subfeatures) {
 
 	var gaps = [];
@@ -403,9 +404,9 @@ function fillTheGaps (coords, subfeatures) {
         gaps.push(feat);
     }
         
-  return gaps;
-  
+  return gaps;  
 }
+*/
 
 /**
  * Title: pastelColors

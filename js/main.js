@@ -173,6 +173,7 @@ return declare( JBrowsePlugin,
 
         var subfeats = this._getSubFeats(feature);
         var types = this._getTypes(subfeats);
+        //console.log(types); //TWS DEBUG
 
         var featAttr = { 
             _id: feature.get('name') || feature.get('name') || feature.get('id') || '>No_name' ,
@@ -204,6 +205,7 @@ return declare( JBrowsePlugin,
 	    var feature_strand = feature.get('strand');
 
         var types = [];
+        //var subfeatures = [{'start':subf_start, 'end':subf_end, 'strand':subf_strand, 'type':subf_type, 'id': subf_type+'_'+(ind+1)}];
         var subfeatures = [];
 
 	    feature.get('subfeatures').forEach(function(f, ind) {
@@ -234,6 +236,21 @@ return declare( JBrowsePlugin,
 
 	    });
 
+        if (checkForOverlap(subfeatures) === -1) {
+
+            // If no overlap, fill in the blanks
+            // Define a new fxn similar to intronsFromExons function for this new task
+            //fillscan(rel_coords, subfeatures)
+            subfeatures = this._fillScan({
+                start: 0,
+                end: Math.abs(feature.get('end') - feature.get('start'))
+            }, subfeatures.sort(function(a,b){return a.start - b.start}));
+            //console.log(subfeatures); //TWS DEBUG
+
+        }
+
+
+/*
         //Create introns from exon or CDS features if necessary
         if (array.indexOf(types, 'intron') === -1) {
 
@@ -259,9 +276,8 @@ return declare( JBrowsePlugin,
 
             }
         }
-
-        this.sortByKey(subfeatures, 'start');
-        
+*/      
+        //console.log(subfeatures);
 	    return subfeatures;
     },
 
@@ -326,7 +342,64 @@ return declare( JBrowsePlugin,
         });
 
         return types;
+    },
+
+    /**
+     * Title: fillScan
+     * Description: Scan through array of subfeatures and fill in spaces
+     * between them. If space is between two subfeatures of 'exon' or 'CDS' type,
+     * this region will be typed as 'intron'
+     * @param {subfeatures(Array)} //Must be sorted by start
+     * @returns {introns(Array)}
+     */
+
+    _fillScan: function (coords, subfeatures) {
+        //console.log("Calling fillScan"); //TWS DEBUG
+
+	    var gaps = [];
+        //Give the non-annotated regions a default type name
+        var defaultType = 'other';
+
+	    if (subfeatures[0].start != coords.start) {
+      	    //console.log("Filling in the start");
+            var feat = {start: coords.start, end: subfeatures[0].start, type: defaultType, id: defaultType+'_a'}
+            gaps.push(feat);
+        }
+      
+        //console.log("Filling in the middle bits");
+        for (i = 0; i < subfeatures.length - 1; i++) {
+
+            //If current and next subfeature are the same and are 'exon' or 'CDS', type is intron
+            if (subfeatures[i].type === subfeatures[i+1].type && array.indexOf(['exon','CDS'], subfeatures[i].type) != -1) {
+                var newType = 'intron';
+            }
+            else {
+                var newType = defaultType;
+            }
+
+            //Do the actual filling in: create feature and push to array
+      	    if ( subfeatures[i].end != subfeatures[i+1].start) {
+            	var feat = {start: subfeatures[i].end, end: subfeatures[i+1].start, type: newType , id: newType+i };
+                gaps.push(feat);
+            }
+        }
+
+        if (subfeatures[subfeatures.length - 1].end != coords.end) {
+      	    //console.log("Filling in the end");
+            var feat = {start: subfeatures[subfeatures.length - 1].end, end: coords.end, type: defaultType, id: defaultType+'_z' };
+            gaps.push(feat);
+        }
+
+        //return gaps;
+
+        //Add gaps to subfeatures and re-sort by start, then return result
+        return subfeatures.concat(gaps).sort(function(a,b){return a.start - b.start});
+
+
+        //return subfeatures;
+
     }
+
             
 });
 });
