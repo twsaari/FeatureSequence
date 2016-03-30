@@ -65,9 +65,6 @@ return declare( JBrowsePlugin,
         //After dfList is resolved, create a new FeatureSequence
         dfList.then(function(results){
 
-            //To export the FeatureSequence object in JSON, uncomment the following:
-            //alert(JSON.stringify([results[0][1], results[1][1], {seqDivName: 'seq_display'}]));
-
             var feat = results[0][1];
             var seq = results[1][1];
             var opt = {seqDivName: 'seq_display'};
@@ -142,56 +139,34 @@ return declare( JBrowsePlugin,
                 }
             }
 
-            return myName.length > 0 ? myName : 'no_store';
+            return myName.length > 0 ? myName : 'no_store_found';
         };
 
         var sequenceStore = getStoreName(track.browser._storeCache);
-        console.log("FeatureSequence will try to rock this with "+sequenceStore);
 
-
-        track.store.args.browser.getStore(sequenceStore, dojo.hitch(this,function( indexedFastaStore ) {
-          if (indexedFastaStore){
-              console.log("We've got a store");}
-              indexedFastaStore.getReferenceSequence(
-              	    { ref: track.store.args.browser.refSeq.name, start: getStart, end: getEnd}, 
-                    dojo.hitch( this, function (fullSeq){
-                        if (feature.get('strand') == -1) {
-                            fullSeq = Util.revcom(fullSeq);
-                        }
-                        var seq_obj = {
-                           upstream: fullSeq.substr(0,buffer), 
-                           target: fullSeq.substr(buffer,targetSeqLen),
-                           downstream: fullSeq.substr(targetSeqLen+buffer)
-                        };
-                        seqDeferred.resolve(seq_obj);                        
-
-                    })
-              );
-        })
-        );
-/*
-        track.store.args.browser.getStore('refseqs', dojo.hitch(this,function( refSeqStore ) {
-
-        	if( refSeqStore ) {
+        track.store.args.browser.getStore(sequenceStore, dojo.hitch(this,function( refSeqStore ) {
+	        	if( refSeqStore ) {
         	    refSeqStore.getReferenceSequence(
               	    { ref: track.store.args.browser.refSeq.name, start: getStart, end: getEnd}, 
-                    dojo.hitch( this, function (fullSeq){
-                        if (feature.get('strand') == -1) {
-                            fullSeq = Util.revcom(fullSeq);
-                        }
-                        var seq_obj = {
-                           upstream: fullSeq.substr(0,buffer), 
-                           target: fullSeq.substr(buffer,targetSeqLen),
-                           downstream: fullSeq.substr(targetSeqLen+buffer)
-                        };
-                        seqDeferred.resolve(seq_obj);                        
+                        dojo.hitch( this, function (fullSeq){
+                            if (feature.get('strand') == -1) {
+                                fullSeq = Util.revcom(fullSeq);
+                            }
 
-                    })
-              );
-          }
-          })
-          );
-*/
+                            var seq_obj = {
+                                upstream: fullSeq.substr(0,buffer), 
+                                target: fullSeq.substr(buffer,targetSeqLen),
+                                downstream: fullSeq.substr(targetSeqLen+buffer)
+                            };
+
+                            seqDeferred.resolve(seq_obj);                        
+
+                        })
+                    );
+                }
+            })
+            );
+
         return seqDeferred.promise;
     },
 
