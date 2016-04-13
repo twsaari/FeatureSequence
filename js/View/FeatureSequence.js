@@ -84,6 +84,11 @@ return declare( null,
                     innerHTML: type+'s'
                 }, row );
 
+                var link = dojo.create('a', {
+                    href: 'plugins/FeatureSequence/doc/Other-feats.txt',
+                    target: '_blank'
+                });
+
                 var qMark = dojo.create('img', {
                     className: 'otherSeqTooltip',
                     src: 'plugins/FeatureSequence/img/text-questionmark.svg',
@@ -91,7 +96,9 @@ return declare( null,
                     style: "height: 12px; width: 12px"
                 });
 
-                domConstruct.place( qMark, col1_td );
+                domConstruct.place( qMark, link );
+                domConstruct.place( link, col1_td );
+
             } 
             else {
                 var col1_td = dojo.create('td', {
