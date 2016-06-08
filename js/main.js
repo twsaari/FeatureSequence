@@ -133,7 +133,7 @@ return declare( JBrowsePlugin,
 
         var sequenceStore = getStoreName(track.browser._storeCache);
 
-        track.store.args.browser.getStore(sequenceStore, dojo.hitch(this,function( refSeqStore ) {
+        track.store.args.browser.getStore('refseqs', dojo.hitch(this,function( refSeqStore ) {
 
         	if( refSeqStore ) {
         	    refSeqStore.getReferenceSequence(
@@ -176,7 +176,7 @@ return declare( JBrowsePlugin,
         //console.log(types); //TWS DEBUG
 
         var featAttr = { 
-            _id: feature.get('name') || feature.get('name') || feature.get('id') || '>No_name' ,
+            _id: feature.get('name') || feature.get('alias') || feature.get('id') || '>No_name' ,
             _absCoords: {start: feature.get('start'), end: feature.get('end')},
             _relCoords: {start: 0, end: Math.abs(feature.get('end') - feature.get('start'))},
             _strand: feature.get('strand'),
