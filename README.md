@@ -28,7 +28,7 @@ git clone https://github.com/tsaari88/FeatureSequence
 ##You must also add a way to call FeatureSequence
 # For example, you want to add a right-click menu option to
 # launch FeatureSequence on your favorite Example_Track.
-# Do this by editing trackList.json as follows:
+# Do this by adding a menuTemplate into trackList.json as follows:
 ...
          "key" : "Example_Track",
          "label" : "Example_Track",
@@ -41,6 +41,8 @@ git clone https://github.com/tsaari88/FeatureSequence
                "action" : "contentDialog",
                "iconClass" : "dijitIconBookmark"
             }
+          ],
+          "trackType: "CanvasFeatures",
 ...
 ```
 
