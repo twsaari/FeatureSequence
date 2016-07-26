@@ -236,7 +236,8 @@ return declare( JBrowsePlugin,
 
 	    });
 
-        if (checkForOverlap(subfeatures) === -1) {
+		var overlaps = checkForOverlap(subfeatures);
+        if (overlaps === -1) {
 
             // If no overlap, fill in the blanks
             // Define a new fxn similar to intronsFromExons function for this new task
@@ -247,36 +248,10 @@ return declare( JBrowsePlugin,
             }, subfeatures.sort(function(a,b){return a.start - b.start}));
             //console.log(subfeatures); //TWS DEBUG
 
-        }
-
-
-/*
-        //Create introns from exon or CDS features if necessary
-        if (array.indexOf(types, 'intron') === -1) {
-
-            if (array.indexOf(types, 'exon') >= 0) {
-
-                //console.log("Exons found. Going to create introns"); //TWS DEBUG
-                var exons = array.filter(subfeatures, function (obj) {
-                    return obj.type === 'exon';
-                });
-
-                this.sortByKey(exons, 'start');
-                subfeatures = subfeatures.concat(this.intronsFromExons(exons));
-
-            } else if (array.indexOf(types, 'CDS') >= 0) {
-
-                //console.log("CDS found. Going to create introns"); //TWS DEBUG
-                var CDS = array.filter(subfeatures, function (obj) {
-                    return obj.type === 'CDS';
-                });
-
-                this.sortByKey(CDS, 'start');
-                subfeatures = subfeatures.concat(this.intronsFromExons(CDS));
-
-            }
-        }
-*/      
+        } else {
+			console.log(overlaps);
+		}
+   
         //console.log(subfeatures);
 	    return subfeatures;
     },
@@ -406,18 +381,13 @@ return declare( JBrowsePlugin,
 
 function checkForOverlap (subfeatures) {
     //console.log("Calling checkForOverlap"); //TWS DEBUG
-    var warnings = '';
+    var overlaps = [];
 
     for (i = 0; i < subfeatures.length - 1; i++) {
         if (subfeatures[i].start < subfeatures[i+1].end && subfeatures[i].end > subfeatures[i+1].start) {
-            warnings += "Warning: Overlap between features: "+subfeatures[i].id+" and "+subfeatures[i+1].id+"\n";
+            overlaps.push([subfeatures[i], subfeatures[i+1]]);
         }
     }
 
-    if (warnings.length > 0) {
-        warnings += "Overlapping subfeatures will cause problems in viewing their boundaries.\nThis may also cause the Feature Sequence Viewer to respond slowly. ";
-        alert(warnings);
-    }
-
-    return warnings.length > 0 ? warnings : -1 ;
+    return overlaps.length > 0 ? overlaps : -1 ;
 }
