@@ -84,9 +84,21 @@ return declare( JBrowsePlugin,
          * An older method will more accurately display overlapping features, 
          * but this will suffer a major performance penalty.
          */
-            if ( checkForOverlap(feat._subfeatures) === -1 ) {
+            var persistingOverlaps = checkForOverlap(feat._subfeatures);
+            if ( persistingOverlaps === -1 ) {
                 var FeatSeq = new FeatureSequence(feat, seq, opt);
             } else {
+                var warnings = "";
+                persistingOverlaps.forEach(function(pair) {
+                    warnings += "Warning: overlap between subfeatures "
+                        +pair[0].id
+                        +" and "
+                        +pair[1].id
+                        +"\n"
+                    ;
+                });
+                warnings += "Overlapping subfeatures will cause problems in viewing their boundaries.\nThis may also cause the Feature Sequence Viewer to respond slowly."
+                alert(warnings);
                 var FeatSeq = new FeatureSequenceOld(feat, seq, opt);
             }
 
@@ -238,9 +250,7 @@ return declare( JBrowsePlugin,
 
 		var overlaps = checkForOverlap(subfeatures);
         if (overlaps === -1) {
-
             // If no overlap, fill in the blanks
-            // Define a new fxn similar to intronsFromExons function for this new task
             //fillscan(rel_coords, subfeatures)
             subfeatures = this._fillScan({
                 start: 0,
@@ -249,10 +259,15 @@ return declare( JBrowsePlugin,
             //console.log(subfeatures); //TWS DEBUG
 
         } else {
-			console.log(overlaps);
+            var cleanedSubfeats = this._cleanOverlaps(overlaps, subfeatures);
+            subfeatures = this._fillScan({
+                start: 0,
+                end: Math.abs(feature.get('end') - feature.get('start'))
+            }, cleanedSubfeats.sort(function(a,b){return a.start - b.start}));
+			//console.log(overlaps);
 		}
    
-        //console.log(subfeatures);
+        console.log(subfeatures); //TWS DEBUG
 	    return subfeatures;
     },
 
@@ -373,8 +388,76 @@ return declare( JBrowsePlugin,
 
         //return subfeatures;
 
-    }
+    },
 
+    /**
+     * Title: _cleanOverlaps
+     * Description: Cleans up commonly found overlapping features by following
+     * GFF3 specifications as of July 2016:
+     * (https://github.com/The-Sequence-Ontology/Specifications/blob/master/gff3.md 
+     * This removes exon features redundant with CDS features, or in cases where exon
+     * and CDS coordinates differ, creates implied non-overlapping UTR's
+     * @param {overlaps(Array), allFeatures(Array)}
+     * @returns {allFeatures(Array)}
+     */
+	_cleanOverlaps: function(overlaps, allFeatures) {
+        overlaps.forEach(function(pair, ind) {
+            //Make sure both objects in pair are of type 'CDS' and 'exon'
+            var goodTypes = pair.filter(function(obj) {
+                return obj.type.toLowerCase() === 'exon' || obj.type.toLowerCase() === 'cds';
+            }).length === 2;
+
+            if (goodTypes) {    
+                var pairTypes = pair.map(function(o) {return o.type.toLowerCase();});
+                var CDSObjIndx = pairTypes.indexOf('cds');
+                var exonObjIndx = pairTypes.indexOf('exon');
+          
+                if (pair[0].start == pair[1].start && pair[0].end == pair[1].end) {
+                    var discard_name = pair[exonObjIndx].id;
+                    //If they have identical coordinates, then remove the corresponding
+                    // 'exon' entry from feature list
+                    var featList_indx = allFeatures.map(function(o) {return o.id; })
+                        .indexOf(discard_name); //find
+                    allFeatures.splice(featList_indx, 1); //remove
+                } else if (pair[0].start == pair[1].start) { 
+                    //Starts match but ends dont. Modify exon start to not overlap, change to UTR
+                    var new_exonStart = pair[CDSObjIndx].end;
+                    var mod_name = pair[exonObjIndx].id;
+                    var modStart_indx = allFeatures.map(function(o) {return o.id; })
+                        .indexOf(mod_name); //find
+                    allFeatures[modStart_indx].start = new_exonStart; //modify
+                    allFeatures[modStart_indx].type = "UTR"; //modify
+                } else if (pair[0].end == pair[1].end) {
+                    //Ends match but starts dont. Modify exon end to not overlap, change to UTR
+                    var new_exonEnd = pair[CDSObjIndx].start;
+                    var mod_name = pair[exonObjIndx].id;
+                    var modEnd_indx = allFeatures.map(function(o) {return o.id;})
+                        .indexOf(mod_name); // find
+                    allFeatures[modEnd_indx].end = new_exonEnd; //modify
+                    allFeatures[modEnd_indx].type = "UTR"; //modify
+                } else { 
+                    // One completely within another. Replace exon with 5'UTR and
+                    // also add in a 3'UTR
+                    var fivePrimeUTR = {
+                        start: pair[exonObjIndx].start,
+                        end: pair[CDSObjIndx].start,
+                        type: "UTR"
+                    };
+                    var threePrimeUTR = {
+                        start: pair[CDSObjIndx].end,
+                        end: pair[exonObjIndx].end,
+                        type: "UTR"
+                    };
+                    var exonName = pair[exonObjIndx].id;
+                    var featList_indx = allFeatures.map(function(o) {return o.id;})
+                        .indexOf(exonName); // find
+                    allFeatures.splice(featList_indx, 1, fivePrimeUTR, threePrimeUTR);
+                    //replace exon with 5'UTR and add 3'UTR at same time.
+                }
+            }
+        });
+        return allFeatures;
+	}
             
 });
 });
@@ -382,12 +465,10 @@ return declare( JBrowsePlugin,
 function checkForOverlap (subfeatures) {
     //console.log("Calling checkForOverlap"); //TWS DEBUG
     var overlaps = [];
-
     for (i = 0; i < subfeatures.length - 1; i++) {
         if (subfeatures[i].start < subfeatures[i+1].end && subfeatures[i].end > subfeatures[i+1].start) {
             overlaps.push([subfeatures[i], subfeatures[i+1]]);
         }
     }
-
     return overlaps.length > 0 ? overlaps : -1 ;
 }
