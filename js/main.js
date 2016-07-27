@@ -35,7 +35,6 @@ return declare( JBrowsePlugin,
     constructor: function( args ) {
 
         // do anything you need to initialize your plugin here
-
         console.log( "FeatureSequence plugin initialized." );
     },
 
@@ -54,6 +53,8 @@ return declare( JBrowsePlugin,
      */
     callFxn: function(track, feature) {
         //console.log("Calling callFxn."); //TWS DEBUG
+
+        var self = this; //fix scoping problem with checkForOverlap within async call
 
         var seq_deferred = this._getSequence(track,feature);
         var feat_deferred = this._getFeatureAttr(feature);      
@@ -84,7 +85,7 @@ return declare( JBrowsePlugin,
          * An older method will more accurately display overlapping features, 
          * but this will suffer a major performance penalty.
          */
-            var persistingOverlaps = checkForOverlap(feat._subfeatures);
+            var persistingOverlaps = self._checkForOverlap(feat._subfeatures);
             if ( persistingOverlaps === -1 ) {
                 var FeatSeq = new FeatureSequence(feat, seq, opt);
             } else {
@@ -248,7 +249,7 @@ return declare( JBrowsePlugin,
 
 	    });
 
-		var overlaps = checkForOverlap(subfeatures);
+		var overlaps = this._checkForOverlap(subfeatures);
         if (overlaps === -1) {
             // If no overlap, fill in the blanks
             //fillscan(rel_coords, subfeatures)
@@ -267,7 +268,7 @@ return declare( JBrowsePlugin,
 			//console.log(overlaps);
 		}
    
-        console.log(subfeatures); //TWS DEBUG
+        //console.log(subfeatures); //TWS DEBUG
 	    return subfeatures;
     },
 
@@ -360,10 +361,11 @@ return declare( JBrowsePlugin,
         for (i = 0; i < subfeatures.length - 1; i++) {
 
             //If current and next subfeature are the same and are 'exon' or 'CDS', type is intron
-            if (subfeatures[i].type === subfeatures[i+1].type && array.indexOf(['exon','CDS'], subfeatures[i].type) != -1) {
+            if (subfeatures[i].type.toLowerCase() === "cds" && subfeatures[i+1].type.toLowerCase() === "cds") {
                 var newType = 'intron';
-            }
-            else {
+            } else if (subfeatures[i].type.toLowerCase() === "exon" && subfeatures[i+1].type.toLowerCase() === "exon") {
+                var newType = 'intron';
+            } else {
                 var newType = defaultType;
             }
 
@@ -388,6 +390,17 @@ return declare( JBrowsePlugin,
 
         //return subfeatures;
 
+    },
+
+    _checkForOverlap: function(subfeatures) {
+        //console.log("Calling checkForOverlap"); //TWS DEBUG
+        var overlaps = [];
+        for (i = 0; i < subfeatures.length - 1; i++) {
+            if (subfeatures[i].start < subfeatures[i+1].end && subfeatures[i].end > subfeatures[i+1].start) {
+                overlaps.push([subfeatures[i], subfeatures[i+1]]);
+            }
+        }
+        return overlaps.length > 0 ? overlaps : -1 ;
     },
 
     /**
@@ -461,14 +474,3 @@ return declare( JBrowsePlugin,
             
 });
 });
-
-function checkForOverlap (subfeatures) {
-    //console.log("Calling checkForOverlap"); //TWS DEBUG
-    var overlaps = [];
-    for (i = 0; i < subfeatures.length - 1; i++) {
-        if (subfeatures[i].start < subfeatures[i+1].end && subfeatures[i].end > subfeatures[i+1].start) {
-            overlaps.push([subfeatures[i], subfeatures[i+1]]);
-        }
-    }
-    return overlaps.length > 0 ? overlaps : -1 ;
-}
