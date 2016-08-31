@@ -1,5 +1,10 @@
 define([
            'dijit/Dialog',
+           'dijit/form/Select',
+           'dijit/form/Button',
+           'dijit/layout/LayoutContainer',
+           'dijit/layout/ContentPane',
+           'dijit/registry',
            'dojo/_base/declare',
            'dojo/_base/array',
            'dojo/_base/lang',
@@ -11,11 +16,17 @@ define([
 		   'dojo/query',
            'JBrowse/Util',
            'JBrowse/Plugin',
+           'JBrowse/View/Dialog/WithActionBar',
            './View/FeatureSequenceOld',
            './View/FeatureSequence'
        ],
        function(
            Dialog,
+           SelectionMenu,
+           Button,
+           LayoutContainer,
+           ContentPane,
+           registry,
            declare,
            array,
            lang,
@@ -27,6 +38,7 @@ define([
 		   query,
            Util,
            JBrowsePlugin,
+           ActionBarDialog,
            FeatureSequenceOld,
            FeatureSequence
        ) {
@@ -40,19 +52,37 @@ return declare( JBrowsePlugin,
 
     /**
      * Title: callFxn
-     * Description: Creates deferred feature and sequence objects 
-     * pulling information from JBrowse objects. Then creates a FeatureSequence 
-     * from the resolved objects.
-     *
-     * TWS FIXME: Possible to return the FeatureSequence container? This would 
-     * give FeatureSequence content directly to contentDialog launched from
-     * the right-click menu
-     *
+     * Description: Access point from the JBrowse instance. Call this function
+     * with the track and feature as arguments. Makes sure the feature is a 
+     * single transcript, then passes it off to prepare and launch
      * @param {track (jbrowse object), feature (jbrowse object)}
-     * @returns { 'Foo' (string) }
+     * @returns {  }
      */
     callFxn: function(track, feature) {
+        var self = this; //fix scoping problem with prepareAndLaunch within async call
         //console.log("Calling callFxn."); //TWS DEBUG
+
+        deferredFeature = this._isSingle(feature); //Need a single, two-levelled feature
+
+        deferredFeature.then(function(f){
+            self._prepareAndLaunch(track, f);
+        });
+
+    },
+
+    /**
+     * Title: _prepareAndLaunch
+     * Description: Creates deferred feature and sequence objects 
+     * pulling information from JBrowse objects. Then launches a FeatureSequence 
+     * instance from the resolved objects.
+     *
+     * TWS FIXME: Possible to give FeatureSequence content directly 
+     * to contentDialog launched from the right-click menu?
+     *
+     * @param {track (jbrowse object), feature (jbrowse object)}
+     * @returns {  }
+     */
+    _prepareAndLaunch(track, feature){
 
         var self = this; //fix scoping problem with checkForOverlap within async call
 
@@ -66,7 +96,8 @@ return declare( JBrowsePlugin,
 
             var feat = results[0][1];
             var seq = results[1][1];
-            var opt = {seqDivName: 'seq_display'};
+			var opt = {};
+            //var opt = {seqDivName: 'seq_display'};
 
             //To export the FeatureSequence object in JSON, uncomment the following:
 /*
@@ -104,9 +135,8 @@ return declare( JBrowsePlugin,
             }
 
         });
-
-        return 'Thank you for using the FeatureSequence plugin';
     },
+
 
     /**
      * Title: _getSequence
@@ -210,7 +240,7 @@ return declare( JBrowsePlugin,
      * @returns {subfeatures (Array)}
      */
     _getSubFeats: function (feature) {
-	    //console.log("Calling getSubFeats"); //TWS DEBUG
+        //console.log("Calling getSubFeats"); //TWS DEBUG
 
 	    var feature_coords = [feature.get('start'), feature.get('end')]
             .sort(function(a,b){return a-b;}); //swap if out of order
@@ -470,7 +500,85 @@ return declare( JBrowsePlugin,
             }
         });
         return allFeatures;
-	}
+	},
+
+    /**
+     * Title: _isSingle
+     * Description: Takes a feature from JBrowse, and makes sure that it has only
+     * a single layer of child features. If not, prompts user to choose 
+     * such a feature and then returns it.
+     * @param {feature(Object)}
+     * @returns {feature(Object)}
+     */
+	_isSingle: function(top_feat) {
+        //console.log("Calling isSingle"); //TWS DEBUG
+
+        var initial_subf = top_feat.get('subfeatures');
+        var threeLevels = initial_subf.some(function(sf) {
+			return sf.get('subfeatures'); //If any subfeatures have subfeatures
+		});
+
+		var transcript_opts = initial_subf.map(function(sf, indx) {
+             //For populating selection menu
+			var sfName = sf.get('id') || sf.get('name') || sf.get('alias');
+			return {label: sfName, value: indx};
+		});
+
+        var deferredSelection = new Deferred();
+        //If threeLevels, resolve after dialog. Otherwise, resolve immediately
+
+        if( threeLevels ) {
+
+            var layout = new LayoutContainer({
+                style: "width: 200px; height: 75px;"
+            });
+
+            var select_one = new SelectionMenu({
+                id: "select_one",
+                options: transcript_opts
+            });
+
+            select_one.startup();
+
+            var selectionPane = new ContentPane({
+                region: "center",
+                content: select_one
+            });
+
+            var actionPane = new ContentPane({
+                region: "bottom"
+            });
+
+            var okButton = new Button({
+                label: "Ok",
+                onClick: function(){
+                    var sel_indx = registry.byId('select_one').get('value');
+                    deferredSelection.resolve(initial_subf[sel_indx]);
+                    registry.byId('selectDialog').destroyRecursive();
+                }
+            }).placeAt(actionPane.containerNode);
+
+            layout.addChild(selectionPane);
+            layout.addChild(actionPane);
+            layout.startup();
+
+            var selectionDialog = new ActionBarDialog({
+                id: "selectDialog",
+                title: "Select a transcript",
+                onHide: function(){
+                    selectionDialog.destroyRecursive();
+                }, 
+                content: layout
+            });
+
+            selectionDialog.startup();
+
+            selectionDialog.show();
+        } else {
+            deferredSelection.resolve(top_feat);
+        }
+        return deferredSelection;
+    }
             
 });
 });
