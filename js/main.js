@@ -530,7 +530,8 @@ return declare( JBrowsePlugin,
         if( threeLevels ) {
 
             var layout = new LayoutContainer({
-                style: "width: 200px; height: 75px;"
+                design: "headline",
+                style: "width: 200px; height: 100px;"
             });
 
             var select_one = new SelectionMenu({
@@ -541,12 +542,15 @@ return declare( JBrowsePlugin,
             select_one.startup();
 
             var selectionPane = new ContentPane({
-                region: "center",
-                content: select_one
+                region: "top",
+                content: '<p style="display: block">Please select a transcript to view:</p>'
             });
 
+            selectionPane.addChild(select_one);
+
             var actionPane = new ContentPane({
-                region: "bottom"
+                region: "bottom",
+                style: "margin: 0px auto 0px auto; text-align: center;"
             });
 
             var okButton = new Button({
@@ -572,6 +576,7 @@ return declare( JBrowsePlugin,
             });
 
             selectionDialog.startup();
+            selectionDialog.resize();
 
             selectionDialog.show();
         } else {
