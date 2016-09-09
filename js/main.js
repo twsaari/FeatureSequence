@@ -12,8 +12,9 @@ define([
            'dojo/DeferredList',
            'dojo/dom',
            'dojo/dom-construct',
-		   'dojo/dom-class',
-		   'dojo/query',
+           'dojo/dom-class',
+           'dojo/json',
+           'dojo/query',
            'JBrowse/Util',
            'JBrowse/Plugin',
            'JBrowse/View/Dialog/WithActionBar',
@@ -33,9 +34,10 @@ define([
            Deferred,
            DeferredList,
            dom,
-		   domConstruct,
-		   domClass,
-		   query,
+           domConstruct,
+           domClass,
+           JSON,
+           query,
            Util,
            JBrowsePlugin,
            ActionBarDialog,
@@ -157,6 +159,15 @@ return declare( JBrowsePlugin,
         var getStart = feature_coords[0] - buffer;
         var getEnd = feature_coords[1] + buffer;
         var targetSeqLen = feature_coords[1]-feature_coords[0];
+
+        /**
+         * Title: getStoreName
+         * Description: Find which store contains indexed fasta or refseqs
+         * Note: A patch to handle indexed_fasta reference sequences
+         * by checking cached stores' properties.
+         * @param {cache (Object - e.g. track.browser._storeCache)}
+         * @returns {myName (String)}
+         */
 
         var getStoreName = function (cache){
             var myName = '';
