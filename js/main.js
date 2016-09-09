@@ -529,42 +529,14 @@ return declare( JBrowsePlugin,
 
         if( threeLevels ) {
 
-            var layout = new LayoutContainer({
-                design: "headline",
-                style: "width: 200px; height: 100px;"
+            var layout = dojo.create('div',{
+                innerHTML: '<p>Please select a transcript to view:</p>'
             });
 
             var select_one = new SelectionMenu({
                 id: "select_one",
                 options: transcript_opts
-            });
-
-            select_one.startup();
-
-            var selectionPane = new ContentPane({
-                region: "top",
-                content: '<p style="display: block">Please select a transcript to view:</p>'
-            });
-
-            selectionPane.addChild(select_one);
-
-            var actionPane = new ContentPane({
-                region: "bottom",
-                style: "margin: 0px auto 0px auto; text-align: center;"
-            });
-
-            var okButton = new Button({
-                label: "Ok",
-                onClick: function(){
-                    var sel_indx = registry.byId('select_one').get('value');
-                    deferredSelection.resolve(initial_subf[sel_indx]);
-                    registry.byId('selectDialog').destroyRecursive();
-                }
-            }).placeAt(actionPane.containerNode);
-
-            layout.addChild(selectionPane);
-            layout.addChild(actionPane);
-            layout.startup();
+            }).placeAt(layout);
 
             var selectionDialog = new ActionBarDialog({
                 id: "selectDialog",
@@ -574,6 +546,20 @@ return declare( JBrowsePlugin,
                 }, 
                 content: layout
             });
+
+            var actionPane = dojo.create('div', {
+                "class": "dijitDialogPaneActionBar"
+                //style: "margin: 0px auto 0px auto; text-align: center;"
+            }, selectionDialog.containerNode);
+
+            var okButton = new Button({
+                label: "Ok",
+                onClick: function(){
+                    var sel_indx = registry.byId('select_one').get('value');
+                    deferredSelection.resolve(initial_subf[sel_indx]);
+                    registry.byId('selectDialog').hide();
+                }
+            }).placeAt(actionPane);
 
             selectionDialog.startup();
             selectionDialog.resize();
