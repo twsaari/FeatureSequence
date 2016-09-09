@@ -2,18 +2,30 @@
     
 }
 
+.attributionPane {
+    height: 100%;
+    float: left;
+}
+
+.attributionPane .txt {
+    float: left;
+    padding: 4px 4px 4px 24px;
+}
+
 .button_td {
 
 }
 
-.button_container {
+.top_container {
     margin-left: 40px;
+    margin-right: 40px;
     margin-bottom: 20px;
 }
 
 .button_meta_table {
     background-color: #e0e5ee;
-    padding: 4px 32px;
+    padding: 4px 24px;
+    float: left;
 }
 
 .buttonRow {
@@ -51,6 +63,11 @@
     -webkit-box-shadow: 0px 0px 4px #222;
     box-shadow: 0px 0px 4px #222;
     background-color:#000;
+}
+
+.gh-logo {
+  margin-top: 4px;
+  height: 40px;
 }
 
 .highlightButton {

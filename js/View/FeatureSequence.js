@@ -53,19 +53,30 @@ return declare( null,
 	    	innerHTML: '' 
 	    });
 
-	    var button_container = dojo.create('div', {
-	    	//id: 'button_container',
-	    	className: 'button_container' 
+	    var top_container = dojo.create('div', {
+	    	//id: 'top_container',
+	    	className: 'top_container' 
 	    }, container );
 	    var metaTable = dojo.create('table', { 
             //id: "button_meta_table",
             className: 'button_meta_table'
-        }, button_container );
+        }, top_container );
         dojo.create( 'div', {
             //id: "seq_display",
             className: "seq_display",
             innerHTML: ''
         },container);
+
+        var attributionPane = dojo.create('div', {
+          	//id: "attributionPane"
+            className: 'attributionPane',
+            innerHTML: '<div class="txt">FeatureSequence Plugin</br><a href="https://github.com/tsaari88/featuresequence" target="_blank">Source on GitHub</a></div>'
+        }, top_container);
+          
+        var ghLogo = dojo.create('img', {
+        	className: 'gh-logo',
+            src: 'https://assets-cdn.github.com/images/modules/logos_page/GitHub-Mark.png'
+        }, attributionPane);
 
         self.feat._types.forEach(function(type){
 
