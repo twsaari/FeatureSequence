@@ -9,6 +9,7 @@ define([
 		   'dojo/query',
            'dijit/registry',
            'dijit/form/ToggleButton',
+           'dijit/Tooltip',
            'dijit/Dialog'
        ],
        function(
@@ -22,6 +23,7 @@ define([
 		   query,
            registry,
            ToggleButton,
+           Tooltip,
            Dialog
        ) {
 return declare( null,
@@ -51,27 +53,70 @@ return declare( null,
 	    	innerHTML: '' 
 	    });
 
-	    var button_container = dojo.create('div', {
-	    	//id: 'button_container',
-	    	className: 'button_container' 
+	    var top_container = dojo.create('div', {
+	    	//id: 'top_container',
+	    	className: 'top_container' 
 	    }, container );
 	    var metaTable = dojo.create('table', { 
             //id: "button_meta_table",
             className: 'button_meta_table'
-        }, button_container );
+        }, top_container );
         dojo.create( 'div', {
             //id: "seq_display",
             className: "seq_display",
             innerHTML: ''
         },container);
 
+        var attributionPane = dojo.create('div', {
+          	//id: "attributionPane"
+            className: 'attributionPane',
+            innerHTML: '<div class="txt">FeatureSequence Plugin</br><a href="https://github.com/tsaari88/featuresequence" target="_blank">Source on GitHub</a></div>'
+        }, top_container);
+          
+        var ghLogo = dojo.create('img', {
+        	className: 'gh-logo',
+            src: 'plugins/FeatureSequence/img/GitHub-Mark.png'
+        }, attributionPane);
+
         self.feat._types.forEach(function(type){
 
             var row = dojo.create('tr', {
                 //id: type+'_buttonRow',
                 className:'buttonRow',
-                innerHTML: '<td class="col1_td"><b class="rowName">'+type+'s'+'</b></td>'
             }, metaTable );
+
+            //TWS Note: Does not work if I try to instantiate col1_td and then selectively add the tooltip 
+            // attribute using domAttr. No error messages, dialog doesn't open. Possible naming conflict somewhere?
+            // Naming conflicts have caused similar problems in the past.
+            if (type == 'other') {
+                var col1_td = dojo.create('td', {
+                    tooltip: "Sequence regions which are not characterized by a subfeature or an inferred intron.",
+                    className: "col1_td",
+                    innerHTML: type+'s'
+                }, row );
+
+                var link = dojo.create('a', {
+                    href: 'plugins/FeatureSequence/doc/Other-feats.txt',
+                    target: '_blank'
+                });
+
+                var qMark = dojo.create('img', {
+                    className: 'otherSeqTooltip',
+                    src: 'plugins/FeatureSequence/img/text-questionmark.svg',
+                    alt: '?',
+                    style: "height: 12px; width: 12px"
+                });
+
+                domConstruct.place( qMark, link );
+                domConstruct.place( link, col1_td );
+
+            } 
+            else {
+                var col1_td = dojo.create('td', {
+                    className: "col1_td",
+                    innerHTML: type+'s'
+                }, row );
+            }
 
             var highlight_td = dojo.create('td', {
                 className: 'button_td'
@@ -146,7 +191,7 @@ return declare( null,
 
         });
 
-        //TWS Left Off Here 3-23-2016. Next step: Possibly simplify code for Highlight
+        //TWS FIXME: Possibly simplify code for Highlight
         // and Lowercase buttons
 
         ['upstream','downstream'].forEach(function(type) {
@@ -323,9 +368,6 @@ return declare( null,
         var targetSeq = this.seq.target.toUpperCase();
         var subfeatures = this.feat._subfeatures;
 
-        //Fill in gaps in subfeatures - add in results from fillTheGaps() and re-sort
-        subfeatures = subfeatures.concat(fillTheGaps(this.feat._relCoords, subfeatures)).sort(function(a,b){return a.start - b.start});
-
         //Split target sequence based on subfeatures
         var target_arr = array.map(subfeatures, function(obj) {
 
@@ -379,33 +421,6 @@ return declare( null,
             
 });
 });
-
-function fillTheGaps (coords, subfeatures) {
-
-	var gaps = [];
-	if (subfeatures[0].start != coords.start) {
-  	    //console.log("Filling in the start");
-        var feat = {start: coords.start, end: subfeatures[0].start, type: null}
-        gaps.push(feat);
-    }
-  
-    //console.log("Filling in the middle bits");
-    for (i = 0; i < subfeatures.length - 1; i++) {
-  	    if ( subfeatures[i].end != subfeatures[i+1].start) {
-        	var feat = {start: subfeatures[i].end, end: subfeatures[i+1].start, type: null};
-            gaps.push(feat);
-        }
-    }
-
-    if (subfeatures[subfeatures.length - 1].end != coords.end) {
-  	    //console.log("Filling in the end");
-        var feat = {start: subfeatures[subfeatures.length - 1].end, end: coords.end, type: null};
-        gaps.push(feat);
-    }
-        
-  return gaps;
-  
-}
 
 /**
  * Title: pastelColors

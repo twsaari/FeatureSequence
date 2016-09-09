@@ -1,5 +1,10 @@
 define([
            'dijit/Dialog',
+           'dijit/form/Select',
+           'dijit/form/Button',
+           'dijit/layout/LayoutContainer',
+           'dijit/layout/ContentPane',
+           'dijit/registry',
            'dojo/_base/declare',
            'dojo/_base/array',
            'dojo/_base/lang',
@@ -12,11 +17,17 @@ define([
            'dojo/query',
            'JBrowse/Util',
            'JBrowse/Plugin',
+           'JBrowse/View/Dialog/WithActionBar',
            './View/FeatureSequenceOld',
            './View/FeatureSequence'
        ],
        function(
            Dialog,
+           SelectionMenu,
+           Button,
+           LayoutContainer,
+           ContentPane,
+           registry,
            declare,
            array,
            lang,
@@ -29,6 +40,7 @@ define([
            query,
            Util,
            JBrowsePlugin,
+           ActionBarDialog,
            FeatureSequenceOld,
            FeatureSequence
        ) {
@@ -37,25 +49,44 @@ return declare( JBrowsePlugin,
     constructor: function( args ) {
 
         // do anything you need to initialize your plugin here
-
         console.log( "FeatureSequence plugin initialized." );
     },
 
     /**
      * Title: callFxn
-     * Description: Creates deferred feature and sequence objects 
-     * pulling information from JBrowse objects. Then creates a FeatureSequence 
-     * from the resolved objects.
-     *
-     * TWS FIXME: Possible to return the FeatureSequence container? This would 
-     * give FeatureSequence content directly to contentDialog launched from
-     * the right-click menu
-     *
+     * Description: Access point from the JBrowse instance. Call this function
+     * with the track and feature as arguments. Makes sure the feature is a 
+     * single transcript, then passes it off to prepare and launch
      * @param {track (jbrowse object), feature (jbrowse object)}
-     * @returns { 'Foo' (string) }
+     * @returns {  }
      */
     callFxn: function(track, feature) {
+        var self = this; //fix scoping problem with prepareAndLaunch within async call
         //console.log("Calling callFxn."); //TWS DEBUG
+
+        deferredFeature = this._isSingle(feature); //Need a single, two-levelled feature
+
+        deferredFeature.then(function(f){
+            self._prepareAndLaunch(track, f);
+        });
+
+    },
+
+    /**
+     * Title: _prepareAndLaunch
+     * Description: Creates deferred feature and sequence objects 
+     * pulling information from JBrowse objects. Then launches a FeatureSequence 
+     * instance from the resolved objects.
+     *
+     * TWS FIXME: Possible to give FeatureSequence content directly 
+     * to contentDialog launched from the right-click menu?
+     *
+     * @param {track (jbrowse object), feature (jbrowse object)}
+     * @returns {  }
+     */
+    _prepareAndLaunch(track, feature){
+
+        var self = this; //fix scoping problem with checkForOverlap within async call
 
         var seq_deferred = this._getSequence(track,feature);
         var feat_deferred = this._getFeatureAttr(feature);      
@@ -67,7 +98,8 @@ return declare( JBrowsePlugin,
 
             var feat = results[0][1];
             var seq = results[1][1];
-            var opt = {seqDivName: 'seq_display'};
+			var opt = {};
+            //var opt = {seqDivName: 'seq_display'};
 
             //To export the FeatureSequence object in JSON, uncomment the following:
 /*
@@ -86,16 +118,27 @@ return declare( JBrowsePlugin,
          * An older method will more accurately display overlapping features, 
          * but this will suffer a major performance penalty.
          */
-            if ( checkForOverlap(feat._subfeatures) === -1 ) {
+            var persistingOverlaps = self._checkForOverlap(feat._subfeatures);
+            if ( persistingOverlaps === -1 ) {
                 var FeatSeq = new FeatureSequence(feat, seq, opt);
             } else {
+                var warnings = "";
+                persistingOverlaps.forEach(function(pair) {
+                    warnings += "Warning: overlap between subfeatures "
+                        +pair[0].id
+                        +" and "
+                        +pair[1].id
+                        +"\n"
+                    ;
+                });
+                warnings += "Overlapping subfeatures will cause problems in viewing their boundaries.\nThis may also cause the Feature Sequence Viewer to respond slowly."
+                alert(warnings);
                 var FeatSeq = new FeatureSequenceOld(feat, seq, opt);
             }
 
         });
-
-        return 'Thank you for using the FeatureSequence plugin';
     },
+
 
     /**
      * Title: _getSequence
@@ -144,8 +187,9 @@ return declare( JBrowsePlugin,
 
         var sequenceStore = getStoreName(track.browser._storeCache);
 
-        track.store.args.browser.getStore(sequenceStore, dojo.hitch(this,function( refSeqStore ) {
-	        	if( refSeqStore ) {
+        track.store.args.browser.getStore('refseqs', dojo.hitch(this,function( refSeqStore ) {
+
+        	if( refSeqStore ) {
         	    refSeqStore.getReferenceSequence(
               	    { ref: track.store.args.browser.refSeq.name, start: getStart, end: getEnd}, 
                         dojo.hitch( this, function (fullSeq){
@@ -183,9 +227,10 @@ return declare( JBrowsePlugin,
 
         var subfeats = this._getSubFeats(feature);
         var types = this._getTypes(subfeats);
+        //console.log(types); //TWS DEBUG
 
         var featAttr = { 
-            _id: feature.get('id'),
+            _id: feature.get('name') || feature.get('alias') || feature.get('id') || '>No_name' ,
             _absCoords: {start: feature.get('start'), end: feature.get('end')},
             _relCoords: {start: 0, end: Math.abs(feature.get('end') - feature.get('start'))},
             _strand: feature.get('strand'),
@@ -206,7 +251,7 @@ return declare( JBrowsePlugin,
      * @returns {subfeatures (Array)}
      */
     _getSubFeats: function (feature) {
-	    //console.log("Calling getSubFeats"); //TWS DEBUG
+        //console.log("Calling getSubFeats"); //TWS DEBUG
 
 	    var feature_coords = [feature.get('start'), feature.get('end')]
             .sort(function(a,b){return a-b;}); //swap if out of order
@@ -214,6 +259,7 @@ return declare( JBrowsePlugin,
 	    var feature_strand = feature.get('strand');
 
         var types = [];
+        //var subfeatures = [{'start':subf_start, 'end':subf_end, 'strand':subf_strand, 'type':subf_type, 'id': subf_type+'_'+(ind+1)}];
         var subfeatures = [];
 
 	    feature.get('subfeatures').forEach(function(f, ind) {
@@ -244,34 +290,26 @@ return declare( JBrowsePlugin,
 
 	    });
 
-        //Create introns from exon or CDS features if necessary
-        if (array.indexOf(types, 'intron') === -1) {
+		var overlaps = this._checkForOverlap(subfeatures);
+        if (overlaps === -1) {
+            // If no overlap, fill in the blanks
+            //fillscan(rel_coords, subfeatures)
+            subfeatures = this._fillScan({
+                start: 0,
+                end: Math.abs(feature.get('end') - feature.get('start'))
+            }, subfeatures.sort(function(a,b){return a.start - b.start}));
+            //console.log(subfeatures); //TWS DEBUG
 
-            if (array.indexOf(types, 'exon') >= 0) {
-
-                //console.log("Exons found. Going to create introns"); //TWS DEBUG
-                var exons = array.filter(subfeatures, function (obj) {
-                    return obj.type === 'exon';
-                });
-
-                this.sortByKey(exons, 'start');
-                subfeatures = subfeatures.concat(this.intronsFromExons(exons));
-
-            } else if (array.indexOf(types, 'CDS') >= 0) {
-
-                //console.log("CDS found. Going to create introns"); //TWS DEBUG
-                var CDS = array.filter(subfeatures, function (obj) {
-                    return obj.type === 'CDS';
-                });
-
-                this.sortByKey(CDS, 'start');
-                subfeatures = subfeatures.concat(this.intronsFromExons(CDS));
-
-            }
-        }
-
-        this.sortByKey(subfeatures, 'start');
-        
+        } else {
+            var cleanedSubfeats = this._cleanOverlaps(overlaps, subfeatures);
+            subfeatures = this._fillScan({
+                start: 0,
+                end: Math.abs(feature.get('end') - feature.get('start'))
+            }, cleanedSubfeats.sort(function(a,b){return a.start - b.start}));
+			//console.log(overlaps);
+		}
+   
+        //console.log(subfeatures); //TWS DEBUG
 	    return subfeatures;
     },
 
@@ -336,25 +374,213 @@ return declare( JBrowsePlugin,
         });
 
         return types;
+    },
+
+    /**
+     * Title: fillScan
+     * Description: Scan through array of subfeatures and fill in spaces
+     * between them. If space is between two subfeatures of 'exon' or 'CDS' type,
+     * this region will be typed as 'intron'
+     * @param {subfeatures(Array)} //Must be sorted by start
+     * @returns {introns(Array)}
+     */
+
+    _fillScan: function (coords, subfeatures) {
+        //console.log("Calling fillScan"); //TWS DEBUG
+
+	    var gaps = [];
+        //Give the non-annotated regions a default type name
+        var defaultType = 'other';
+
+	    if (subfeatures[0].start != coords.start) {
+      	    //console.log("Filling in the start");
+            var feat = {start: coords.start, end: subfeatures[0].start, type: defaultType, id: defaultType+'_a'}
+            gaps.push(feat);
+        }
+      
+        //console.log("Filling in the middle bits");
+        for (i = 0; i < subfeatures.length - 1; i++) {
+
+            //If current and next subfeature are the same and are 'exon' or 'CDS', type is intron
+            if (subfeatures[i].type.toLowerCase() === "cds" && subfeatures[i+1].type.toLowerCase() === "cds") {
+                var newType = 'intron';
+            } else if (subfeatures[i].type.toLowerCase() === "exon" && subfeatures[i+1].type.toLowerCase() === "exon") {
+                var newType = 'intron';
+            } else {
+                var newType = defaultType;
+            }
+
+            //Do the actual filling in: create feature and push to array
+      	    if ( subfeatures[i].end != subfeatures[i+1].start) {
+            	var feat = {start: subfeatures[i].end, end: subfeatures[i+1].start, type: newType , id: newType+i };
+                gaps.push(feat);
+            }
+        }
+
+        if (subfeatures[subfeatures.length - 1].end != coords.end) {
+      	    //console.log("Filling in the end");
+            var feat = {start: subfeatures[subfeatures.length - 1].end, end: coords.end, type: defaultType, id: defaultType+'_z' };
+            gaps.push(feat);
+        }
+
+        //return gaps;
+
+        //Add gaps to subfeatures and re-sort by start, then return result
+        return subfeatures.concat(gaps).sort(function(a,b){return a.start - b.start});
+
+
+        //return subfeatures;
+
+    },
+
+    _checkForOverlap: function(subfeatures) {
+        //console.log("Calling checkForOverlap"); //TWS DEBUG
+        var overlaps = [];
+        for (i = 0; i < subfeatures.length - 1; i++) {
+            if (subfeatures[i].start < subfeatures[i+1].end && subfeatures[i].end > subfeatures[i+1].start) {
+                overlaps.push([subfeatures[i], subfeatures[i+1]]);
+            }
+        }
+        return overlaps.length > 0 ? overlaps : -1 ;
+    },
+
+    /**
+     * Title: _cleanOverlaps
+     * Description: Cleans up commonly found overlapping features by following
+     * GFF3 specifications as of July 2016:
+     * (https://github.com/The-Sequence-Ontology/Specifications/blob/master/gff3.md 
+     * This removes exon features redundant with CDS features, or in cases where exon
+     * and CDS coordinates differ, creates implied non-overlapping UTR's
+     * @param {overlaps(Array), allFeatures(Array)}
+     * @returns {allFeatures(Array)}
+     */
+	_cleanOverlaps: function(overlaps, allFeatures) {
+        overlaps.forEach(function(pair, ind) {
+            //Make sure both objects in pair are of type 'CDS' and 'exon'
+            var goodTypes = pair.filter(function(obj) {
+                return obj.type.toLowerCase() === 'exon' || obj.type.toLowerCase() === 'cds';
+            }).length === 2;
+
+            if (goodTypes) {    
+                var pairTypes = pair.map(function(o) {return o.type.toLowerCase();});
+                var CDSObjIndx = pairTypes.indexOf('cds');
+                var exonObjIndx = pairTypes.indexOf('exon');
+          
+                if (pair[0].start == pair[1].start && pair[0].end == pair[1].end) {
+                    var discard_name = pair[exonObjIndx].id;
+                    //If they have identical coordinates, then remove the corresponding
+                    // 'exon' entry from feature list
+                    var featList_indx = allFeatures.map(function(o) {return o.id; })
+                        .indexOf(discard_name); //find
+                    allFeatures.splice(featList_indx, 1); //remove
+                } else if (pair[0].start == pair[1].start) { 
+                    //Starts match but ends dont. Modify exon start to not overlap, change to UTR
+                    var new_exonStart = pair[CDSObjIndx].end;
+                    var mod_name = pair[exonObjIndx].id;
+                    var modStart_indx = allFeatures.map(function(o) {return o.id; })
+                        .indexOf(mod_name); //find
+                    allFeatures[modStart_indx].start = new_exonStart; //modify
+                    allFeatures[modStart_indx].type = "UTR"; //modify
+                } else if (pair[0].end == pair[1].end) {
+                    //Ends match but starts dont. Modify exon end to not overlap, change to UTR
+                    var new_exonEnd = pair[CDSObjIndx].start;
+                    var mod_name = pair[exonObjIndx].id;
+                    var modEnd_indx = allFeatures.map(function(o) {return o.id;})
+                        .indexOf(mod_name); // find
+                    allFeatures[modEnd_indx].end = new_exonEnd; //modify
+                    allFeatures[modEnd_indx].type = "UTR"; //modify
+                } else { 
+                    // One completely within another. Replace exon with 5'UTR and
+                    // also add in a 3'UTR
+                    var fivePrimeUTR = {
+                        start: pair[exonObjIndx].start,
+                        end: pair[CDSObjIndx].start,
+                        type: "UTR"
+                    };
+                    var threePrimeUTR = {
+                        start: pair[CDSObjIndx].end,
+                        end: pair[exonObjIndx].end,
+                        type: "UTR"
+                    };
+                    var exonName = pair[exonObjIndx].id;
+                    var featList_indx = allFeatures.map(function(o) {return o.id;})
+                        .indexOf(exonName); // find
+                    allFeatures.splice(featList_indx, 1, fivePrimeUTR, threePrimeUTR);
+                    //replace exon with 5'UTR and add 3'UTR at same time.
+                }
+            }
+        });
+        return allFeatures;
+	},
+
+    /**
+     * Title: _isSingle
+     * Description: Takes a feature from JBrowse, and makes sure that it has only
+     * a single layer of child features. If not, prompts user to choose 
+     * such a feature and then returns it.
+     * @param {feature(Object)}
+     * @returns {feature(Object)}
+     */
+	_isSingle: function(top_feat) {
+        //console.log("Calling isSingle"); //TWS DEBUG
+
+        var initial_subf = top_feat.get('subfeatures');
+        var threeLevels = initial_subf.some(function(sf) {
+			return sf.get('subfeatures'); //If any subfeatures have subfeatures
+		});
+
+		var transcript_opts = initial_subf.map(function(sf, indx) {
+             //For populating selection menu
+			var sfName = sf.get('id') || sf.get('name') || sf.get('alias');
+			return {label: sfName, value: indx};
+		});
+
+        var deferredSelection = new Deferred();
+        //If threeLevels, resolve after dialog. Otherwise, resolve immediately
+
+        if( threeLevels ) {
+
+            var layout = dojo.create('div',{
+                innerHTML: '<p>Please select a transcript to view:</p>'
+            });
+
+            var select_one = new SelectionMenu({
+                id: "select_one",
+                options: transcript_opts
+            }).placeAt(layout);
+
+            var selectionDialog = new ActionBarDialog({
+                id: "selectDialog",
+                title: "Select a transcript",
+                onHide: function(){
+                    selectionDialog.destroyRecursive();
+                }, 
+                content: layout
+            });
+
+            var actionPane = dojo.create('div', {
+                "class": "dijitDialogPaneActionBar"
+                //style: "margin: 0px auto 0px auto; text-align: center;"
+            }, selectionDialog.containerNode);
+
+            var okButton = new Button({
+                label: "Ok",
+                onClick: function(){
+                    var sel_indx = registry.byId('select_one').get('value');
+                    deferredSelection.resolve(initial_subf[sel_indx]);
+                    registry.byId('selectDialog').hide();
+                }
+            }).placeAt(actionPane);
+
+            selectionDialog.startup();
+            selectionDialog.resize();
+
+            selectionDialog.show();
+        } else {
+            deferredSelection.resolve(top_feat);
+        }
+        return deferredSelection;
     }
             
 });
 });
-
-function checkForOverlap (subfeatures) {
-    //console.log("Calling checkForOverlap"); //TWS DEBUG
-    var warnings = '';
-
-    for (i = 0; i < subfeatures.length - 1; i++) {
-        if (subfeatures[i].start < subfeatures[i+1].end && subfeatures[i].end > subfeatures[i+1].start) {
-            warnings += "Warning: Overlap between features: "+subfeatures[i].id+" and "+subfeatures[i+1].id+"\n";
-        }
-    }
-
-    if (warnings.length > 0) {
-        warnings += "Overlapping subfeatures will cause problems in viewing their boundaries.\nThis may also cause the Feature Sequence Viewer to respond slowly. ";
-        alert(warnings);
-    }
-
-    return warnings.length > 0 ? warnings : -1 ;
-}

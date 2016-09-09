@@ -2,18 +2,30 @@
     
 }
 
+.attributionPane {
+    height: 100%;
+    float: left;
+}
+
+.attributionPane .txt {
+    float: left;
+    padding: 4px 4px 4px 24px;
+}
+
 .button_td {
 
 }
 
-.button_container {
+.top_container {
     margin-left: 40px;
+    margin-right: 40px;
     margin-bottom: 20px;
 }
 
 .button_meta_table {
     background-color: #e0e5ee;
-    padding: 4px 32px;
+    padding: 4px 24px;
+    float: left;
 }
 
 .buttonRow {
@@ -21,8 +33,41 @@
 }
 
 .col1_td {
+    text-transform: capitalize;
+    font-weight: bold;
     padding: 0 0.5em 0 0;
     text-align: left;
+}
+
+.col1_td[tooltip]:hover {
+    color: #26477e;
+    position: relative;
+}
+
+.col1_td[tooltip]:hover:after {
+    content: attr(tooltip);
+    text-transform: none;
+    position: absolute;
+    padding: 8px; 
+    color: #fff;
+    position: absolute;
+    left: 0;
+    top: 100%;
+    width: 350px;
+    white-space: wrap;
+    z-index: 20px;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    border-radius: 5px;
+    -moz-box-shadow: 0px 0px 4px #222;
+    -webkit-box-shadow: 0px 0px 4px #222;
+    box-shadow: 0px 0px 4px #222;
+    background-color:#000;
+}
+
+.gh-logo {
+  margin-top: 4px;
+  height: 32px;
 }
 
 .highlightButton {
@@ -58,7 +103,7 @@
     border: 1px solid #000000;
     margin-right: 40px;
     margin-left: 40px;
-    width: 500px;
+    width: 550px;
 }
 
 .sequence_title {
