@@ -75,7 +75,7 @@ return declare( null,
           
         var ghLogo = dojo.create('img', {
         	className: 'gh-logo',
-            src: 'https://assets-cdn.github.com/images/modules/logos_page/GitHub-Mark.png'
+            src: 'plugins/FeatureSequence/img/GitHub-Mark.png'
         }, attributionPane);
 
         self.feat._types.forEach(function(type){
