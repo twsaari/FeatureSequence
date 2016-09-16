@@ -286,7 +286,7 @@ return declare( JBrowsePlugin,
 
 	    });
 
-		var overlaps = this._checkForOverlap(subfeatures);
+		var overlaps = this._checkForOverlap(subfeatures.sort(function(a,b){return a.start - b.start}));
         if (overlaps === -1) {
             // If no overlap, fill in the blanks
             //fillscan(rel_coords, subfeatures)
