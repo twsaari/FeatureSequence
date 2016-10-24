@@ -444,7 +444,7 @@ return declare( JBrowsePlugin,
      * Title: _cleanOverlaps
      * Description: Cleans up commonly found overlapping features by following
      * GFF3 specifications as of July 2016:
-     * (https://github.com/The-Sequence-Ontology/Specifications/blob/master/gff3.md 
+     * https://github.com/The-Sequence-Ontology/Specifications/blob/master/gff3.md 
      * This removes exon features redundant with CDS features, or in cases where exon
      * and CDS coordinates differ, creates implied non-overlapping UTR's
      * @param {overlaps(Array), allFeatures(Array)}
