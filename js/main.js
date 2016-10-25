@@ -80,7 +80,7 @@ return declare( JBrowsePlugin,
      * @param {track (jbrowse object), feature (jbrowse object)}
      * @returns {  }
      */
-    _prepareAndLaunch(track, feature){
+    _prepareAndLaunch: function(track, feature){
 
         var self = this; //fix scoping problem with checkForOverlap within async call
 
