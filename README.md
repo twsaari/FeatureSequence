@@ -1,4 +1,4 @@
-##FeatureSequence
+## FeatureSequence
 
 FeatureSequence is a plugin built for the genome browser _JBrowse_.
 
@@ -15,12 +15,12 @@ FeatureSequence allows the user to:
 
 * Change case of any type of subfeature
   * Can be used to map intron/exon junctions
-  * Simplify RealTime qPCR primer design!
+  * Simplify RealTime qPCR primer design
 
 * View upstream and downstream sequences
 
 
-##To use the FeatureSequence plugin:
+### To use the FeatureSequence plugin:
 
 1. Clone this repository into your jbrowse/plugins/ directory
 
@@ -60,7 +60,7 @@ Do this by editing trackList.json, adding the menuTemplate value to the track la
 Now in JBrowse, when right-clicking a feature on Example_Track, you will have the option to "View Feature Sequence."
 This will open up a Feature Sequence Viewer pop-up dialog with interactive features for a customized sequence view.
 
-##Additional Details
+### Additional Details
 
 FeatureSequence Author: Travis Saari.
 
