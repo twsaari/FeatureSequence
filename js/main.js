@@ -182,12 +182,18 @@ return declare( JBrowsePlugin,
         };
 
         var sequenceStore = getStoreName(track.browser._storeCache);
-
-        track.store.args.browser.getStore('refseqs', dojo.hitch(this,function( refSeqStore ) {
+        var my_browser = '';
+        if (typeof track.store.args == 'undefined') {
+            my_browser = track.store.browser;
+        }
+        else {
+            my_browser = track.store.args.browser;
+        }
+        my_browser.getStore('refseqs', dojo.hitch(this,function( refSeqStore ) {
 
         	if( refSeqStore ) {
         	    refSeqStore.getReferenceSequence(
-              	    { ref: track.store.args.browser.refSeq.name, start: getStart, end: getEnd}, 
+              	    { ref: my_browser.refSeq.name, start: getStart, end: getEnd}, 
                         dojo.hitch( this, function (fullSeq){
                             if (feature.get('strand') == -1) {
                                 fullSeq = Util.revcom(fullSeq);
