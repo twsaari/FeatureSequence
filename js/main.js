@@ -61,10 +61,11 @@ return declare( JBrowsePlugin,
         //console.log("Calling callFxn."); //TWS DEBUG
 
         deferredFeature = this._isSingle(feature); //Need a single, two-levelled feature
-
-        deferredFeature.then(function(f){
-            self._prepareAndLaunch(track, f);
-        });
+        if (deferredFeature) {
+          deferredFeature.then(function(f){
+              self._prepareAndLaunch(track, f);
+          });
+        }
 
     },
 
@@ -525,61 +526,81 @@ return declare( JBrowsePlugin,
      */
 	_isSingle: function(top_feat) {
         //console.log("Calling isSingle"); //TWS DEBUG
-
         var initial_subf = top_feat.get('subfeatures');
-        var threeLevels = initial_subf.some(function(sf) {
-			return sf.get('subfeatures'); //If any subfeatures have subfeatures
-		});
 
-		var transcript_opts = initial_subf.map(function(sf, indx) {
-             //For populating selection menu
-			var sfName = sf.get('id') || sf.get('name') || sf.get('alias');
-			return {label: sfName, value: indx};
-		});
+        if ( initial_subf === undefined ) {
+          var layout = dojo.create('div', { innerHTML: '<p> No subfeatures to show</p>'});
 
-        var deferredSelection = new Deferred();
-        //If threeLevels, resolve after dialog. Otherwise, resolve immediately
+          var selectionDialog = new ActionBarDialog({
+                    id: "selectDialog",
+                    title: "",
+                    onHide: function(){
+                        selectionDialog.destroyRecursive();
+                    },
+                    content: layout
+          });
 
-        if( threeLevels ) {
+          selectionDialog.startup();
+          selectionDialog.resize();
 
-            var layout = dojo.create('div',{
-                innerHTML: '<p>Please select a transcript to view:</p>'
-            });
-
-            var select_one = new SelectionMenu({
-                id: "select_one",
-                options: transcript_opts
-            }).placeAt(layout);
-
-            var selectionDialog = new ActionBarDialog({
-                id: "selectDialog",
-                title: "Select a transcript",
-                onHide: function(){
-                    selectionDialog.destroyRecursive();
-                }, 
-                content: layout
-            });
-
-            var actionPane = dojo.create('div', {
-                "class": "dijitDialogPaneActionBar"
-                //style: "margin: 0px auto 0px auto; text-align: center;"
-            }, selectionDialog.containerNode);
-
-            var okButton = new Button({
-                label: "Ok",
-                onClick: function(){
-                    var sel_indx = registry.byId('select_one').get('value');
-                    deferredSelection.resolve(initial_subf[sel_indx]);
-                    registry.byId('selectDialog').hide();
-                }
-            }).placeAt(actionPane);
-
-            selectionDialog.startup();
-            selectionDialog.resize();
-
-            selectionDialog.show();
+          selectionDialog.show();
         } else {
-            deferredSelection.resolve(top_feat);
+
+            var threeLevels = initial_subf.some(function(sf) {
+                return sf.get('subfeatures'); //If any subfeatures have subfeatures
+            });
+
+            var transcript_opts = initial_subf.map(function(sf, indx) {
+                 //For populating selection menu
+                var sfName = sf.get('id') || sf.get('name') || sf.get('alias');
+                return {label: sfName, value: indx};
+            });
+
+            var deferredSelection = new Deferred();
+            //If threeLevels, resolve after dialog. Otherwise, resolve immediately
+
+            if( threeLevels ) {
+
+                var layout = dojo.create('div',{
+                    innerHTML: '<p>Please select a transcript to view:</p>'
+                });
+
+                var select_one = new SelectionMenu({
+                    id: "select_one",
+                    options: transcript_opts
+                }).placeAt(layout);
+
+                var selectionDialog = new ActionBarDialog({
+                    id: "selectDialog",
+                    title: "Select a transcript",
+                    onHide: function(){
+                        selectionDialog.destroyRecursive();
+                    },
+                    content: layout
+                });
+
+                var actionPane = dojo.create('div', {
+                    "class": "dijitDialogPaneActionBar"
+                    //style: "margin: 0px auto 0px auto; text-align: center;"
+                }, selectionDialog.containerNode);
+
+                var okButton = new Button({
+                    label: "Ok",
+                    onClick: function(){
+                        var sel_indx = registry.byId('select_one').get('value');
+                        deferredSelection.resolve(initial_subf[sel_indx]);
+                        registry.byId('selectDialog').hide();
+                    }
+                }).placeAt(actionPane);
+
+                selectionDialog.startup();
+                selectionDialog.resize();
+
+                selectionDialog.show();
+
+            } else {
+              deferredSelection.resolve(top_feat);
+            }
         }
         return deferredSelection;
     }
