@@ -467,6 +467,7 @@ return declare( JBrowsePlugin,
                 var pairTypes = pair.map(function(o) {return o.type.toLowerCase();});
                 var CDSObjIndx = pairTypes.indexOf('cds');
                 var exonObjIndx = pairTypes.indexOf('exon');
+                if (CDSObjIndx == -1 || exonObjIndx== -1) { return; }
           
                 if (pair[0].start == pair[1].start && pair[0].end == pair[1].end) {
                     var discard_name = pair[exonObjIndx].id;
