@@ -68,6 +68,7 @@ return declare( JBrowsePlugin,
 
     },
 
+
     /**
      * Title: _prepareAndLaunch
      * Description: Creates deferred feature and sequence objects 
@@ -94,7 +95,7 @@ return declare( JBrowsePlugin,
 
             var feat = results[0][1];
             var seq = results[1][1];
-			var opt = {};
+            var opt = {};
             //var opt = {seqDivName: 'seq_display'};
 
             //To export the FeatureSequence object in JSON, uncomment the following:
@@ -169,10 +170,8 @@ return declare( JBrowsePlugin,
             var myName = '';
             for (var cachedStore in cache) {
                 var attr = cache[cachedStore].store;
-                //console.log(attr.name);
                 if (attr.hasOwnProperty('fasta') && attr.hasOwnProperty('name')){
                     myName = attr.name;
-                    //console.log(attr.name+" is your indexed_fasta store!");
                 }else if (attr.hasOwnProperty('name') && attr.name === 'refseqs') {
                     myName = attr.name;
                 }
@@ -191,9 +190,9 @@ return declare( JBrowsePlugin,
         }
         my_browser.getStore('refseqs', dojo.hitch(this,function( refSeqStore ) {
 
-        	if( refSeqStore ) {
-        	    refSeqStore.getReferenceSequence(
-              	    { ref: my_browser.refSeq.name, start: getStart, end: getEnd}, 
+            if( refSeqStore ) {
+                refSeqStore.getReferenceSequence(
+                     { ref: my_browser.refSeq.name, start: getStart, end: getEnd}, 
                         dojo.hitch( this, function (fullSeq){
                             if (feature.get('strand') == -1) {
                                 fullSeq = Util.revcom(fullSeq);
@@ -246,6 +245,31 @@ return declare( JBrowsePlugin,
         
 
     /**
+     * Title: _hasFeat
+     * Description: Checks if there's a feature that shares the same boundaries
+     * in the list of features.
+     * It checks the start and end positions and if the feature type holds
+     * the optionnal string.
+     * @param {features (an array of feature objects), feature (a single feature object), type (a string, the type of feature)}
+     * @returns {0|1 (1 if feature is in features, 0 otherwise)}
+     */
+    _hasFeat: function(features, feature, type = null) {
+        for (const single_feat of features) {
+            if (type) {
+                if (single_feat.start == feature.start && single_feat.end  == feature.end && feature.type.includes(type)) {
+                    return 0;
+                }
+             } else {
+                 if (single_feat.start == feature.start && single_feat.end  == feature.end) {
+                     return 0;
+                 }
+             }
+        }
+        return 1;
+    },
+
+
+    /**
      * Title: _getSubFeats
      * Description: Creates a sorted array of subfeatures,
      *  with all of the information needed for FeatureSequence
@@ -255,33 +279,33 @@ return declare( JBrowsePlugin,
     _getSubFeats: function (feature) {
         //console.log("Calling getSubFeats"); //TWS DEBUG
 
-	    var feature_coords = [feature.get('start'), feature.get('end')]
+        var feature_coords = [feature.get('start'), feature.get('end')]
             .sort(function(a,b){return a-b;}); //swap if out of order
 
-	    var feature_strand = feature.get('strand');
+        var feature_strand = feature.get('strand');
 
         var types = [];
         //var subfeatures = [{'start':subf_start, 'end':subf_end, 'strand':subf_strand, 'type':subf_type, 'id': subf_type+'_'+(ind+1)}];
         var subfeatures = [];
 
-	    feature.get('subfeatures').forEach(function(f, ind) {
+        feature.get('subfeatures').forEach(function(f, ind) {
 
-		    var subfeat_coords = [f.get('start'), f.get('end')]
+        var subfeat_coords = [f.get('start'), f.get('end')]
                 .sort(function(a,b){return a-b;}); //swap if out of order
 
             //All coordinates are made relative to feature start
-		    if (feature_strand == 1) {
-			    var subf_start = subfeat_coords[0] - feature_coords[0]; 
-			    var subf_end = subfeat_coords[1] - feature_coords[0]; 
-		    } else if (feature_strand == -1) {
-			    var subf_start = feature_coords[1] - subfeat_coords[1];
-			    var subf_end = feature_coords[1] - subfeat_coords[0];
-		    }
+            if (feature_strand == 1) {
+                var subf_start = subfeat_coords[0] - feature_coords[0]; 
+                var subf_end = subfeat_coords[1] - feature_coords[0]; 
+            } else if (feature_strand == -1) {
+                var subf_start = feature_coords[1] - subfeat_coords[1];
+                var subf_end = feature_coords[1] - subfeat_coords[0];
+            }
 
-		    var subf_strand = f.get('strand');
-		    var subf_type = f.get('type');
+            var subf_strand = f.get('strand');
+            var subf_type = f.get('type');
 
-		    var subf_obj = {'start':subf_start, 'end':subf_end, 'strand':subf_strand, 'type':subf_type, 'id': subf_type+'_'+(ind+1)};
+            var subf_obj = {'start':subf_start, 'end':subf_end, 'strand':subf_strand, 'type':subf_type, 'id': subf_type+'_'+(ind+1)};
 
             //Push subf_type to types array if not seen yet
             if (array.indexOf(types, subf_type) === -1 ) {
@@ -290,12 +314,11 @@ return declare( JBrowsePlugin,
 
             subfeatures.push(subf_obj)
 
-	    });
+        });
 
-		var overlaps = this._checkForOverlap(subfeatures.sort(function(a,b){return a.start - b.start}));
+        var overlaps = this._checkForOverlap(subfeatures.sort(function(a,b){return a.start - b.start}));
         if (overlaps === -1) {
             // If no overlap, fill in the blanks
-            //fillscan(rel_coords, subfeatures)
             subfeatures = this._fillScan({
                 start: 0,
                 end: Math.abs(feature.get('end') - feature.get('start'))
@@ -308,11 +331,10 @@ return declare( JBrowsePlugin,
                 start: 0,
                 end: Math.abs(feature.get('end') - feature.get('start'))
             }, cleanedSubfeats.sort(function(a,b){return a.start - b.start}));
-			//console.log(overlaps);
-		}
+        }
    
         //console.log(subfeatures); //TWS DEBUG
-	    return subfeatures;
+        return subfeatures;
     },
 
     /**
@@ -323,18 +345,18 @@ return declare( JBrowsePlugin,
      */
     intronsFromExons: function (exons) {
 
-	    //console.log("Calling intronsFromExons"); //TWS DEBUG
-	    var intronArray = [];
+        //console.log("Calling intronsFromExons"); //TWS DEBUG
+        var intronArray = [];
 
-	    for (var i = 0; i < exons.length-1; i++) {
+        for (var i = 0; i < exons.length-1; i++) {
 
-		    var intron_start = exons[i].end;
-		    var intron_end = exons[i+1].start;
+            var intron_start = exons[i].end;
+            var intron_end = exons[i+1].start;
 
-		    intronArray[i] = {'start':intron_start,'end':intron_end, 'strand':exons[i].strand, 'type':'intron', 'id': 'intron_'+(i+1)};
+            intronArray[i] = {'start':intron_start,'end':intron_end, 'strand':exons[i].strand, 'type':'intron', 'id': 'intron_'+(i+1)};
         }
-	
-	    return intronArray;
+    
+        return intronArray;
     },
 
     /**
@@ -345,7 +367,7 @@ return declare( JBrowsePlugin,
      */
     sortByKey: function (array, key) {
 
-	    //console.log("Calling sortByKey"); //TWS DEBUG
+        //console.log("Calling sortByKey"); //TWS DEBUG
         return array.sort(function(a, b) {
             var x = a[key];
             var y = b[key];
@@ -378,6 +400,7 @@ return declare( JBrowsePlugin,
         return types;
     },
 
+
     /**
      * Title: fillScan
      * Description: Scan through array of subfeatures and fill in spaces
@@ -390,17 +413,21 @@ return declare( JBrowsePlugin,
     _fillScan: function (coords, subfeatures) {
         //console.log("Calling fillScan"); //TWS DEBUG
 
-	    var gaps = [];
+        var gaps = [];
         //Give the non-annotated regions a default type name
         var defaultType = 'other';
 
-	    if (subfeatures[0].start != coords.start) {
-      	    //console.log("Filling in the start");
-            var feat = {start: coords.start, end: subfeatures[0].start, type: defaultType, id: defaultType+'_a'}
-            gaps.push(feat);
+        if (subfeatures[0].start != coords.start) {
+              // console.log("Filling in the start");
+            if (coords.start < subfeatures[0].start) {
+                var feat = {start: coords.start, end: subfeatures[0].start, type: defaultType, id: defaultType+'_a'}
+            } else {
+                var feat = {start: subfeatures[0].start, end: coords.start, type: defaultType, id: defaultType+'_a'}
+            }
+            this._hasFeat(subfeatures, feat) && gaps.push(feat);
         }
       
-        //console.log("Filling in the middle bits");
+        // console.log("Filling in the middle bits");
         for (i = 0; i < subfeatures.length - 1; i++) {
 
             //If current and next subfeature are the same and are 'exon' or 'CDS', type is intron
@@ -413,15 +440,23 @@ return declare( JBrowsePlugin,
             }
 
             //Do the actual filling in: create feature and push to array
-      	    if ( subfeatures[i].end != subfeatures[i+1].start) {
-            	var feat = {start: subfeatures[i].end, end: subfeatures[i+1].start, type: newType , id: newType+i };
-                gaps.push(feat);
+              if ( subfeatures[i].end != subfeatures[i+1].start) {
+                if (subfeatures[i].end < subfeatures[i+1].start) {
+                    var feat = {start: subfeatures[i].end, end: subfeatures[i+1].start, type: newType , id: newType+i };
+                } else {
+                    var feat = {start: subfeatures[i+1].start, end: subfeatures[i].end, type: newType , id: newType+i };
+                }
+                this._hasFeat(subfeatures, feat) && gaps.push(feat);
             }
         }
 
         if (subfeatures[subfeatures.length - 1].end != coords.end) {
-      	    //console.log("Filling in the end");
-            var feat = {start: subfeatures[subfeatures.length - 1].end, end: coords.end, type: defaultType, id: defaultType+'_z' };
+              // console.log("Filling in the end");
+            if (subfeatures[subfeatures.length - 1].end < coords.end) {
+                var feat = {start: subfeatures[subfeatures.length - 1].end, end: coords.end, type: defaultType, id: defaultType+'_z' };
+            } else {
+                var feat = {start: coords.end, start: subfeatures[subfeatures.length - 1].end, type: defaultType, id: defaultType+'_z' };
+            }
             gaps.push(feat);
         }
 
@@ -429,10 +464,6 @@ return declare( JBrowsePlugin,
 
         //Add gaps to subfeatures and re-sort by start, then return result
         return subfeatures.concat(gaps).sort(function(a,b){return a.start - b.start});
-
-
-        //return subfeatures;
-
     },
 
     _checkForOverlap: function(subfeatures) {
@@ -456,7 +487,7 @@ return declare( JBrowsePlugin,
      * @param {overlaps(Array), allFeatures(Array)}
      * @returns {allFeatures(Array)}
      */
-	_cleanOverlaps: function(overlaps, allFeatures) {
+    _cleanOverlaps: function(overlaps, allFeatures) {
         overlaps.forEach(function(pair, ind) {
             //Make sure both objects in pair are of type 'CDS' and 'exon'
             var goodTypes = pair.filter(function(obj) {
@@ -484,6 +515,8 @@ return declare( JBrowsePlugin,
                         .indexOf(mod_name); //find
                     allFeatures[modStart_indx].start = new_exonStart; //modify
                     allFeatures[modStart_indx].type = "UTR"; //modify
+                    var isHere = this._hasFeat(allFeatures, allFeatures[modStart_indx], 'UTR');
+                    (!isHere) && allFeatures.splice(modStart_indx, 1); //remove
                 } else if (pair[0].end == pair[1].end) {
                     //Ends match but starts dont. Modify exon end to not overlap, change to UTR
                     var new_exonEnd = pair[CDSObjIndx].start;
@@ -492,6 +525,8 @@ return declare( JBrowsePlugin,
                         .indexOf(mod_name); // find
                     allFeatures[modEnd_indx].end = new_exonEnd; //modify
                     allFeatures[modEnd_indx].type = "UTR"; //modify
+                    var isHere = this._hasFeat(allFeatures, allFeatures[modEnd_indx], 'UTR');
+                    (!isHere) && allFeatures.splice(modEnd_indx, 1); //remove
                 } else { 
                     // One completely within another. Replace exon with 5'UTR and
                     // also add in a 3'UTR
@@ -512,9 +547,9 @@ return declare( JBrowsePlugin,
                     //replace exon with 5'UTR and add 3'UTR at same time.
                 }
             }
-        });
+        }, this);
         return allFeatures;
-	},
+    },
 
     /**
      * Title: _isSingle
@@ -524,19 +559,19 @@ return declare( JBrowsePlugin,
      * @param {feature(Object)}
      * @returns {feature(Object)}
      */
-	_isSingle: function(top_feat) {
+    _isSingle: function(top_feat) {
         //console.log("Calling isSingle"); //TWS DEBUG
 
         var initial_subf = top_feat.get('subfeatures');
         var threeLevels = initial_subf.some(function(sf) {
-			return sf.get('subfeatures'); //If any subfeatures have subfeatures
-		});
+            return sf.get('subfeatures'); //If any subfeatures have subfeatures
+        });
 
-		var transcript_opts = initial_subf.map(function(sf, indx) {
+        var transcript_opts = initial_subf.map(function(sf, indx) {
              //For populating selection menu
-			var sfName = sf.get('id') || sf.get('name') || sf.get('alias');
-			return {label: sfName, value: indx};
-		});
+            var sfName = sf.get('id') || sf.get('name') || sf.get('alias');
+            return {label: sfName, value: indx};
+        });
 
         var deferredSelection = new Deferred();
         //If threeLevels, resolve after dialog. Otherwise, resolve immediately
