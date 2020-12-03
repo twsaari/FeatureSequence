@@ -245,15 +245,15 @@ return declare( JBrowsePlugin,
         
 
     /**
-     * Title: _hasFeat
+     * Title: _canAddFeat
      * Description: Checks if there's a feature that shares the same boundaries
      * in the list of features.
      * It checks the start and end positions and if the feature type holds
      * the optionnal string.
      * @param {features (an array of feature objects), feature (a single feature object), type (a string, the type of feature)}
-     * @returns {0|1 (1 if feature is in features, 0 otherwise)}
+     * @returns {0|1 (1 if feature is not in features and can be added, 0 otherwise)}
      */
-    _hasFeat: function(features, feature, type = null) {
+    _canAddFeat: function(features, feature, type = null) {
         for (const single_feat of features) {
             if (type) {
                 if (single_feat.start == feature.start && single_feat.end  == feature.end && feature.type.includes(type)) {
@@ -424,7 +424,7 @@ return declare( JBrowsePlugin,
             } else {
                 var feat = {start: subfeatures[0].start, end: coords.start, type: defaultType, id: defaultType+'_a'}
             }
-            this._hasFeat(subfeatures, feat) && gaps.push(feat);
+            this._canAddFeat(subfeatures, feat) && gaps.push(feat);
         }
       
         // console.log("Filling in the middle bits");
@@ -446,7 +446,7 @@ return declare( JBrowsePlugin,
                 } else {
                     var feat = {start: subfeatures[i+1].start, end: subfeatures[i].end, type: newType , id: newType+i };
                 }
-                this._hasFeat(subfeatures, feat) && gaps.push(feat);
+                this._canAddFeat(subfeatures, feat) && gaps.push(feat);
             }
         }
 
@@ -515,8 +515,8 @@ return declare( JBrowsePlugin,
                         .indexOf(mod_name); //find
                     allFeatures[modStart_indx].start = new_exonStart; //modify
                     allFeatures[modStart_indx].type = "UTR"; //modify
-                    var isHere = this._hasFeat(allFeatures, allFeatures[modStart_indx], 'UTR');
-                    (!isHere) && allFeatures.splice(modStart_indx, 1); //remove
+                    var canAdd = this._canAddFeat(allFeatures, allFeatures[modStart_indx], 'UTR');
+                    (!canAdd) && allFeatures.splice(modStart_indx, 1); //remove
                 } else if (pair[0].end == pair[1].end) {
                     //Ends match but starts dont. Modify exon end to not overlap, change to UTR
                     var new_exonEnd = pair[CDSObjIndx].start;
@@ -525,8 +525,8 @@ return declare( JBrowsePlugin,
                         .indexOf(mod_name); // find
                     allFeatures[modEnd_indx].end = new_exonEnd; //modify
                     allFeatures[modEnd_indx].type = "UTR"; //modify
-                    var isHere = this._hasFeat(allFeatures, allFeatures[modEnd_indx], 'UTR');
-                    (!isHere) && allFeatures.splice(modEnd_indx, 1); //remove
+                    var canAdd = this._canAddFeat(allFeatures, allFeatures[modEnd_indx], 'UTR');
+                    (!canAdd) && allFeatures.splice(modEnd_indx, 1); //remove
                 } else { 
                     // One completely within another. Replace exon with 5'UTR and
                     // also add in a 3'UTR
